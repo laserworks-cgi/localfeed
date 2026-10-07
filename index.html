@@ -6,9 +6,6 @@
   <title>Lokal Media Feed</title>
   <meta name="theme-color" content="#000000">
   <meta name="color-scheme" content="dark">
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
-
   <style>
     * {
       box-sizing: border-box;
@@ -18,132 +15,109 @@
       -webkit-user-select: none;
       user-select: none;
     }
-    body {
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      min-height: 100%;
+      overflow: hidden;
       background: #000;
       color: #fff;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      height: 100vh;
+    }
+
+    body {
       width: 100vw;
-      overflow: hidden;
+      height: 100dvh;
       display: flex;
       justify-content: center;
     }
+
+    button {
+      font: inherit;
+    }
+
     .app-shell {
-      width: 100%;
-      max-width: 480px;
-      height: 100vh;
+      width: min(100%, 560px);
+      height: 100dvh;
+      min-height: 0;
       position: relative;
       background: #000;
       overflow: hidden;
       display: flex;
       flex-direction: column;
+      isolation: isolate;
     }
-    #bg-blur-ambient {
+
+    #bg-blur-canvas {
       position: absolute;
-      inset: 0;
-      background-size: cover;
-      background-position: center;
-      filter: blur(30px) brightness(.5);
-      transform: scale(1.2);
+      inset: -8%;
+      width: 116%;
+      height: 116%;
       opacity: 0;
-      transition: opacity .2s ease;
+      object-fit: cover;
+      filter: blur(30px) brightness(.48);
+      transform: scale(1.08);
+      transform-origin: center;
       pointer-events: none;
       z-index: 0;
+      transition: opacity .18s ease;
     }
-    .app-shell.theme-blurred #bg-blur-ambient {
+
+    .app-shell.theme-blurred #bg-blur-canvas {
       opacity: 1;
-    }
-    .app-shell.theme-blurred .bottom-nav {
-      background: rgba(0, 0, 0, .45) !important;
-      backdrop-filter: blur(20px);
-    }
-    
-    /* Floating Header Menu: Tanpa latar & tab aktif warna merah */
-    .top-header-glass {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 100;
-      background: transparent !important;
-      backdrop-filter: none !important;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 52px;
-      pointer-events: none;
-    }
-    .nav-top {
-      display: flex;
-      gap: 32px;
-      pointer-events: auto;
-    }
-    .nav-tab {
-      background: none;
-      border: none;
-      color: rgba(255, 255, 255, 0.7);
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-      position: relative;
-      padding: 6px 4px;
-      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
-      transition: color 0.15s ease;
-    }
-    .nav-tab.active {
-      color: #fe2c55 !important;
-    }
-    .nav-tab.active::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 15%;
-      width: 70%;
-      height: 3px;
-      background: #fe2c55;
-      border-radius: 2px;
-      box-shadow: 0 0 8px rgba(254, 44, 85, 0.6);
     }
 
     .views-container {
-      flex: 1;
+      flex: 1 1 auto;
       width: 100%;
-      height: 100%;
+      min-height: 0;
       position: relative;
       overflow: hidden;
       z-index: 1;
     }
+
     .view-page {
       position: absolute;
       inset: 0;
       display: flex;
       flex-direction: column;
+      overflow-x: hidden;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
       opacity: 0;
       visibility: hidden;
       pointer-events: none;
+      overscroll-behavior: contain;
     }
+
     .view-page::-webkit-scrollbar {
       display: none;
     }
+
     .view-page.active {
       opacity: 1;
       visibility: visible;
       pointer-events: auto;
     }
+
     #view-home {
-      overflow-y: scroll;
-      -webkit-overflow-scrolling: touch;
+      overflow-y: auto;
       scroll-snap-type: y mandatory;
+      scroll-padding-top: 0;
+      scroll-padding-bottom: 60px;
       touch-action: pan-y;
-      height: 100%;
+      overscroll-behavior-y: contain;
+      padding-bottom: 60px;
     }
+
     .feed-item {
       width: 100%;
       height: 100%;
-      min-height: 100vh;
+      min-height: 100%;
+      max-height: 100%;
+      flex: 0 0 100%;
       scroll-snap-align: start;
       scroll-snap-stop: always;
       position: relative;
@@ -153,581 +127,56 @@
       justify-content: center;
       overflow: hidden;
       touch-action: pan-y;
+      contain: layout paint style;
     }
+
     .media-wrapper {
       width: 100%;
       height: 100%;
+      position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
-      position: relative;
+      overflow: hidden;
       cursor: pointer;
       touch-action: pan-y;
     }
+
+    .media-placeholder {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      place-items: center;
+      background: transparent;
+    }
+
     .media-content {
       width: 100%;
       height: 100%;
       object-fit: contain;
+      display: block;
       pointer-events: none;
-    }
-    .audio-box {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-    }
-    .audio-box svg {
-      width: 64px;
-      height: 64px;
-      fill: #fff;
-      opacity: .8;
-    }
-
-    /* Ikon pause: segitiga murni tanpa latar, fade singkat lalu fade out */
-    .pause-triangle-badge {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) scale(0.8);
-      background: none !important;
-      border: none !important;
-      box-shadow: none !important;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-      pointer-events: none;
-      z-index: 45;
-    }
-    .pause-triangle-badge svg {
-      width: 58px;
-      height: 58px;
-      fill: #ffffff;
-      filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.75));
-    }
-    .pause-triangle-badge.animate-triangle {
-      animation: triangleFade 0.32s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
-    }
-    @keyframes triangleFade {
-      0% {
-        opacity: 0;
-        transform: translate(-50%, -50%) scale(0.7);
-      }
-      35% {
-        opacity: 0.95;
-        transform: translate(-50%, -50%) scale(1.1);
-      }
-      65% {
-        opacity: 0.85;
-        transform: translate(-50%, -50%) scale(1);
-      }
-      100% {
-        opacity: 0;
-        transform: translate(-50%, -50%) scale(1.15);
-      }
-    }
-
-    .overlay-info {
-      position: absolute;
-      bottom: 76px;
-      left: 16px;
-      right: 70px;
-      z-index: 20;
-      pointer-events: none;
-      text-shadow: 0 1px 4px rgba(0,0,0,.9);
-    }
-    .meta-user {
-      font-weight: 700;
-      font-size: 15px;
-      margin-bottom: 4px;
-    }
-    .meta-desc {
-      font-size: 13px;
-      margin-bottom: 6px;
-      word-break: break-all;
-    }
-    .meta-tags {
-      font-size: 11px;
-      opacity: .85;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-    .sidebar {
-      position: absolute;
-      right: 12px;
-      bottom: 90px;
-      z-index: 25;
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-      align-items: center;
-    }
-    .side-btn {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      cursor: pointer;
-      background: none;
-      border: none;
-      color: #fff;
-      font-size: 11px;
-    }
-    .side-btn svg {
-      width: 28px;
-      height: 28px;
-      fill: #fff;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,.8));
-      transition: transform .1s;
-    }
-    .side-btn.liked svg {
-      fill: #fe2c55;
-    }
-
-    /* Notif Rotate Phone: Ukuran ramping, border 0.5px tipis, putih, auto-dismiss 4 detik */
-    .rotate-pill {
-      position: absolute;
-      bottom: 220px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 40;
-      background: rgba(20, 20, 20, 0.82);
-      border: 0.5px solid rgba(255, 255, 255, 0.35);
-      backdrop-filter: blur(10px);
-      border-radius: 20px;
-      padding: 6px 14px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.65);
-      touch-action: auto;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.25s ease, transform 0.25s ease;
-      transform: translate(-50%, 6px);
-    }
-    .rotate-pill.visible {
-      opacity: 1;
-      pointer-events: auto;
-      transform: translate(-50%, 0);
-    }
-    .rotate-pill svg {
-      width: 15px;
-      height: 15px;
-      fill: #ffffff;
-    }
-    .rotate-pill span {
-      font-size: 11px;
-      font-weight: 500;
-      color: #ffffff;
-      white-space: nowrap;
-      letter-spacing: 0.2px;
-    }
-
-    /* Animasi Like (Double Tap): Cepat (0.42s) */
-    .heart-center {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 90px;
-      height: 90px;
-      fill: #fe2c55;
-      pointer-events: none;
-      transform: translate(-50%,-50%) scale(0);
-      animation: heartPopFast 0.42s cubic-bezier(.17,.89,.32,1.28) forwards;
-      z-index: 50;
-      filter: drop-shadow(0 4px 12px rgba(0,0,0,.6));
-    }
-    @keyframes heartPopFast {
-      0% { transform: translate(-50%,-50%) scale(0); opacity: 0; }
-      45% { transform: translate(-50%,-50%) scale(1.22); opacity: 1; }
-      100% { transform: translate(-50%,-65%) scale(1.05); opacity: 0; }
-    }
-
-    .bottom-nav {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 60px;
-      background: rgba(0,0,0,.85);
-      backdrop-filter: blur(10px);
-      border-top: 1px solid rgba(255,255,255,.1);
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      z-index: 100;
-    }
-    .bottom-btn {
-      background: none;
-      border: none;
-      color: rgba(255,255,255,.6);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      font-size: 10px;
-      cursor: pointer;
-      flex: 1;
-    }
-    .bottom-btn.active {
-      color: #fff;
-    }
-    .bottom-btn svg {
-      width: 22px;
-      height: 22px;
-      fill: currentColor;
-    }
-    .empty-view {
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      color: #777;
-      font-size: 14px;
-      padding: 24px;
-      text-align: center;
-    }
-
-    /* Eksplor Thumbnail Grid dengan Overlay Nama dan Tanggal */
-    .grid-view {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 3px;
-      padding: 60px 3px 70px 3px;
-    }
-    .grid-item {
-      aspect-ratio: 9/16;
-      background: #181818;
-      position: relative;
-      overflow: hidden;
-      cursor: pointer;
-    }
-    .grid-thumb {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-    .grid-overlay {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(180deg, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.85) 100%);
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      padding: 6px;
-      pointer-events: none;
-    }
-    .grid-item-title {
-      font-size: 11px;
-      font-weight: 600;
-      color: #fff;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      margin-bottom: 2px;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.9);
-    }
-    .grid-item-date {
-      font-size: 9px;
-      color: rgba(255, 255, 255, 0.75);
-      text-shadow: 0 1px 2px rgba(0,0,0,0.9);
-    }
-
-    /* Fullscreen Landscape Mode & Bar Timestamp */
-    #fullscreen-landscape {
-      position: fixed;
-      inset: 0;
-      background: #000;
-      z-index: 999;
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-    #fullscreen-landscape video {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-    }
-    #landscape-close {
-      position: absolute;
-      top: 18px;
-      left: 18px;
-      background: rgba(0,0,0,.65);
-      border: 1px solid rgba(255,255,255,.3);
-      color: #fff;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      font-size: 20px;
-      cursor: pointer;
-      z-index: 1002;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      backdrop-filter: blur(8px);
-    }
-    
-    .landscape-timeline-bar {
-      position: absolute;
-      bottom: 24px;
-      left: 24px;
-      right: 24px;
-      z-index: 1002;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      background: rgba(0, 0, 0, 0.65);
-      backdrop-filter: blur(10px);
-      padding: 8px 16px;
-      border-radius: 30px;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-    }
-    .landscape-time-text {
-      font-size: 12px;
-      font-variant-numeric: tabular-nums;
-      font-weight: 500;
-      color: rgba(255, 255, 255, 0.85);
-      white-space: nowrap;
-    }
-    .landscape-slider-track {
-      flex: 1;
-      height: 6px;
-      background: rgba(255, 255, 255, 0.25);
-      border-radius: 3px;
-      position: relative;
-      cursor: pointer;
-    }
-    .landscape-slider-fill {
-      height: 100%;
-      width: 0%;
-      background: #fe2c55;
-      border-radius: 3px;
-      pointer-events: none;
-    }
-
-    .profile-card {
-      padding: 70px 20px 80px 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-    .profile-header {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-    .profile-avatar {
-      width: 70px;
-      height: 70px;
-      border-radius: 50%;
-      background: #333;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 24px;
-    }
-    .profile-btn-upload {
-      background: #fe2c55;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 12px 16px;
-      font-weight: 700;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(254,44,85,.3);
-    }
-    .profile-section {
-      background: rgba(255,255,255,.05);
-      border: 1px solid rgba(255,255,255,.1);
-      border-radius: 12px;
-      padding: 16px;
-    }
-    .section-title {
-      font-size: 14px;
-      font-weight: 700;
-      margin-bottom: 12px;
-      color: rgba(255,255,255,.8);
-    }
-    .theme-options {
-      display: flex;
-      gap: 10px;
-    }
-    .theme-btn {
-      flex: 1;
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid rgba(255,255,255,.2);
       background: transparent;
-      color: #fff;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .theme-btn.active {
-      background: #fff;
-      color: #000;
-      border-color: #fff;
-    }
-    #upload-loading {
-      position: absolute;
-      inset: 0;
-      z-index: 500;
-      background: rgba(0,0,0,.6);
-      backdrop-filter: blur(16px);
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 14px;
-    }
-    .progress-box {
-      width: 200px;
-      height: 6px;
-      background: rgba(255,255,255,.2);
-      border-radius: 3px;
-      overflow: hidden;
-    }
-    .progress-bar {
-      height: 100%;
-      width: 0;
-      background: #fe2c55;
-      transition: width .1s linear;
-    }
-  
-    /* ===== Responsive / Flexbox hardening ===== */
-    html, body {
-      width: 100%;
-      min-height: 100%;
-      overflow: hidden;
     }
 
-    body {
-      min-height: 100dvh;
-      height: 100dvh;
-    }
-
-    .app-shell {
-      width: min(100%, 560px);
-      height: 100dvh;
-      min-height: 0;
-      overflow: hidden;
-      isolation: isolate;
-    }
-
-    .views-container {
-      min-height: 0;
-      flex: 1 1 auto;
-      overflow: hidden;
-    }
-
-    .view-page {
-      min-height: 0;
-      height: 100%;
-      overflow-x: hidden;
-      overflow-y: auto;
-      overscroll-behavior-y: contain;
-      scrollbar-width: none;
-    }
-
-    /* Only the feed owns vertical scrolling. Other pages use their own page scroll,
-       never a nested scroll container inside a page. */
-    #view-home {
-      overflow-x: hidden;
-      overflow-y: auto;
-      min-height: 0;
-      height: 100%;
-      scroll-snap-type: y mandatory;
-      overscroll-behavior-y: contain;
-      padding-bottom: 60px;
-    }
-
-    .feed-item {
-      height: 100%;
-      min-height: 100%;
-      max-height: 100%;
-      flex: 0 0 100%;
-    }
-
-    .profile-card {
-      width: 100%;
-      max-width: 560px;
-      margin: 0 auto;
-      padding: calc(58px + env(safe-area-inset-top)) 16px calc(84px + env(safe-area-inset-bottom));
-      min-height: 100%;
-    }
-
-    .profile-header {
-      min-width: 0;
-    }
-
-    .profile-header > div:last-child {
-      min-width: 0;
-    }
-
-    .profile-header > div:last-child > div {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .profile-btn-upload,
-    .profile-fullscreen-btn {
-      width: 100%;
-      min-height: 46px;
-    }
-
-    .profile-section {
-      width: 100%;
-      min-width: 0;
-    }
-
-    .theme-options {
-      width: 100%;
-      flex-wrap: wrap;
-    }
-
-    .theme-btn {
-      min-width: 0;
-      flex: 1 1 140px;
-    }
-
-    .bottom-nav {
-      height: calc(60px + env(safe-area-inset-bottom));
-      padding-bottom: env(safe-area-inset-bottom);
-    }
-
-    .top-header-glass {
-      height: calc(52px + env(safe-area-inset-top));
-      padding-top: env(safe-area-inset-top);
-    }
-
-    .overlay-info {
-      bottom: calc(76px + env(safe-area-inset-bottom));
-    }
-
-    .sidebar {
-      bottom: calc(90px + env(safe-area-inset-bottom));
-    }
-
-    .grid-view {
-      padding-bottom: calc(70px + env(safe-area-inset-bottom));
+    .feed-item.rotated .media-content {
+      width: 100dvh;
+      height: 100dvw;
+      max-width: none;
+      max-height: none;
+      flex: 0 0 auto;
+      object-fit: contain;
+      transform: rotate(90deg);
+      will-change: transform;
     }
 
     .audio-box {
       width: min(78vw, 320px);
       text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
     }
 
     .audio-cover {
@@ -737,6 +186,14 @@
       border-radius: 14px;
       box-shadow: 0 10px 30px rgba(0,0,0,.45);
       background: #181818;
+      display: none;
+    }
+
+    .audio-default-icon {
+      width: 64px;
+      height: 64px;
+      fill: #fff;
+      opacity: .8;
     }
 
     .audio-title {
@@ -757,36 +214,448 @@
       color: rgba(255,255,255,.72);
     }
 
-    .profile-fullscreen-status {
-      display: block;
-      margin-top: 8px;
+    .overlay-info {
+      position: absolute;
+      left: 16px;
+      right: 70px;
+      bottom: calc(76px + env(safe-area-inset-bottom));
+      z-index: 20;
+      pointer-events: none;
+      text-shadow: 0 1px 4px rgba(0,0,0,.9);
+      transition: opacity .15s ease;
+    }
+
+    .meta-user {
+      font-weight: 700;
+      font-size: 15px;
+      margin-bottom: 4px;
+    }
+
+    .meta-desc {
+      font-size: 13px;
+      margin-bottom: 6px;
+      word-break: break-word;
+    }
+
+    .meta-tags {
       font-size: 11px;
-      line-height: 1.4;
-      color: rgba(255,255,255,.55);
+      opacity: .85;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .sidebar {
+      position: absolute;
+      right: 12px;
+      bottom: calc(90px + env(safe-area-inset-bottom));
+      z-index: 25;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      align-items: center;
+      transition: opacity .15s ease;
+    }
+
+    .side-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 11px;
+    }
+
+    .side-btn svg {
+      width: 28px;
+      height: 28px;
+      fill: #fff;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,.8));
+      transition: transform .1s;
+    }
+
+    .side-btn.liked svg {
+      fill: #fe2c55;
+    }
+
+    .pause-triangle-badge {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(.8);
+      background: none;
+      border: none;
+      box-shadow: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 45;
+    }
+
+    .pause-triangle-badge svg {
+      width: 58px;
+      height: 58px;
+      fill: #fff;
+      filter: drop-shadow(0 2px 10px rgba(0,0,0,.75));
+    }
+
+    .pause-triangle-badge.animate-triangle {
+      animation: triangleFade .32s cubic-bezier(.25,.8,.25,1) forwards;
+    }
+
+    @keyframes triangleFade {
+      0% { opacity: 0; transform: translate(-50%,-50%) scale(.7); }
+      35% { opacity: .95; transform: translate(-50%,-50%) scale(1.1); }
+      65% { opacity: .85; transform: translate(-50%,-50%) scale(1); }
+      100% { opacity: 0; transform: translate(-50%,-50%) scale(1.15); }
+    }
+
+    .heart-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 90px;
+      height: 90px;
+      fill: #fe2c55;
+      pointer-events: none;
+      transform: translate(-50%,-50%) scale(0);
+      animation: heartPopFast .42s cubic-bezier(.17,.89,.32,1.28) forwards;
+      z-index: 50;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,.6));
+    }
+
+    @keyframes heartPopFast {
+      0% { transform: translate(-50%,-50%) scale(0); opacity: 0; }
+      45% { transform: translate(-50%,-50%) scale(1.22); opacity: 1; }
+      100% { transform: translate(-50%,-65%) scale(1.05); opacity: 0; }
+    }
+
+    .rotate-pill {
+      position: absolute;
+      left: 50%;
+      bottom: 24%;
+      transform: translate(-50%, 8px);
+      z-index: 40;
+      background: rgba(20,20,20,.82);
+      border: .5px solid rgba(255,255,255,.35);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0,0,0,.65);
+      touch-action: manipulation;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease, transform .2s ease;
+    }
+
+    .rotate-pill.visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-50%, 0);
+    }
+
+    .rotate-pill svg {
+      width: 15px;
+      height: 15px;
+      fill: #fff;
+    }
+
+    .rotate-pill span {
+      font-size: 11px;
+      font-weight: 500;
+      color: #fff;
+      white-space: nowrap;
+      letter-spacing: .2px;
+    }
+
+    .bottom-nav {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: calc(60px + env(safe-area-inset-bottom));
+      padding-bottom: env(safe-area-inset-bottom);
+      background: rgba(0,0,0,.85);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid rgba(255,255,255,.1);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 100;
+      transition: opacity .15s ease;
+    }
+
+    .bottom-btn {
+      width: 33.333%;
+      height: 100%;
+      background: none;
+      border: none;
+      color: rgba(255,255,255,.6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-size: 10px;
+      cursor: pointer;
+    }
+
+    .bottom-btn.active {
+      color: #fff;
+    }
+
+    .bottom-btn svg {
+      width: 22px;
+      height: 22px;
+      fill: currentColor;
+    }
+
+    .empty-view {
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: #777;
+      font-size: 14px;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .grid-view {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 3px;
+      padding: 3px 3px calc(70px + env(safe-area-inset-bottom));
+    }
+
+    .grid-item {
+      aspect-ratio: 9/16;
+      min-width: 0;
+      background: #181818;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      contain: paint layout style;
+    }
+
+    .grid-item.loading::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(110deg,#181818 25%,#222 37%,#181818 63%);
+      background-size: 220% 100%;
+      animation: thumbShimmer 1.1s linear infinite;
+    }
+
+    @keyframes thumbShimmer {
+      to { background-position-x: -220%; }
+    }
+
+    .grid-thumb {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      opacity: 0;
+      transition: opacity .16s ease;
+    }
+
+    .grid-thumb.ready {
+      opacity: 1;
+    }
+
+    .grid-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,.02) 40%, rgba(0,0,0,.84) 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 6px;
+      pointer-events: none;
+    }
+
+    .grid-item-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #fff;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-bottom: 2px;
+      text-shadow: 0 1px 3px rgba(0,0,0,.9);
+    }
+
+    .grid-item-date {
+      font-size: 9px;
+      color: rgba(255,255,255,.75);
+      text-shadow: 0 1px 2px rgba(0,0,0,.9);
+    }
+
+    .profile-card {
+      width: 100%;
+      max-width: 560px;
+      margin: 0 auto;
+      padding: calc(28px + env(safe-area-inset-top)) 16px calc(84px + env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-height: 100%;
+    }
+
+    .profile-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 8px 0;
+    }
+
+    .profile-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 22px;
+      flex: 0 0 auto;
+    }
+
+    .profile-summary {
+      min-width: 0;
+    }
+
+    .profile-summary-name {
+      font-weight: 700;
+      font-size: 18px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .profile-summary-count {
+      margin-top: 4px;
+      font-size: 12px;
+      color: #888;
+    }
+
+    .profile-btn-upload {
+      width: 100%;
+      min-height: 46px;
+      background: #fe2c55;
+      color: #fff;
+      border: none;
+      border-radius: 9px;
+      padding: 11px 16px;
+      font-weight: 700;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(254,44,85,.25);
+    }
+
+    .profile-section {
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 12px;
+      padding: 15px;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 11px;
+      color: rgba(255,255,255,.8);
+    }
+
+    .theme-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .theme-btn {
+      min-height: 42px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,.2);
+      background: transparent;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .theme-btn.active {
+      background: #fff;
+      color: #000;
+      border-color: #fff;
+    }
+
+    #upload-loading {
+      position: absolute;
+      inset: 0;
+      z-index: 500;
+      background: rgba(0,0,0,.62);
+      backdrop-filter: blur(16px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+    }
+
+    .progress-box {
+      width: 200px;
+      height: 6px;
+      background: rgba(255,255,255,.2);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0;
+      background: #fe2c55;
+      transition: width .08s linear;
+    }
+
+    .app-shell.feed-rotated .top-header-glass,
+    .app-shell.feed-rotated .bottom-nav,
+    .app-shell.feed-rotated .overlay-info,
+    .app-shell.feed-rotated .sidebar {
+      opacity: 0;
+      pointer-events: none;
     }
 
     @media (min-width: 700px) {
       body {
         background: #101010;
-        overflow: hidden;
       }
 
       .app-shell {
         box-shadow: 0 0 60px rgba(0,0,0,.4);
       }
-
-      .nav-top {
-        gap: 40px;
-      }
     }
 
     @media (max-width: 360px) {
-      .nav-top {
-        gap: 20px;
-      }
-
-      .nav-tab {
-        font-size: 14px;
+      .grid-view {
+        grid-template-columns: repeat(3, minmax(0,1fr));
       }
 
       .profile-card {
@@ -797,822 +666,1039 @@
       .profile-header {
         gap: 12px;
       }
-
-      .profile-avatar {
-        width: 60px;
-        height: 60px;
-      }
     }
-
   </style>
 </head>
 <body>
   <div class="app-shell" id="appShell">
-    <div id="bg-blur-ambient"></div>
+    <canvas id="bg-blur-canvas" aria-hidden="true"></canvas>
 
-    <!-- Floating Top Menu (Tanpa Latar, Tombol Aktif Merah) -->
-    <div class="top-header-glass">
-      <div class="nav-top">
-        <button class="nav-tab active" data-tab="mymedia">myMedia</button>
-        <button class="nav-tab" data-tab="liked">Liked</button>
-      </div>
-    </div>
-
-    <input type="file" id="fileInput" accept="video/*,audio/*,image/*" multiple style="display:none">
+    <input type="file" id="fileInput" accept="video/*,audio/*,image/*" multiple hidden>
 
     <div class="views-container">
       <div class="view-page active" id="view-home">
         <div class="empty-view" id="empty-home">
-          Belum ada media diunggah.<br>Buka menu Profile untuk menambah file.
+          Belum ada media diunggah.<br>
+          Buka Profile untuk menambah file.
         </div>
       </div>
-      <div class="view-page" id="view-search">
-        <div class="empty-view">Pencarian Media Lokal</div>
-      </div>
+
       <div class="view-page" id="view-explore">
         <div class="grid-view" id="explore-grid"></div>
         <div class="empty-view" id="empty-explore">Belum ada thumbnail media.</div>
       </div>
+
       <div class="view-page" id="view-profile">
         <div class="profile-card">
           <div class="profile-header">
             <div class="profile-avatar">M</div>
-            <div>
-              <div style="font-weight:700;font-size:18px">@lokal.user</div>
-              <div style="font-size:12px;color:#888" id="media-count-txt">0 Media dimuat</div>
+            <div class="profile-summary">
+              <div class="profile-summary-name">@lokal.user</div>
+              <div class="profile-summary-count" id="media-count-txt">0 Media dimuat</div>
             </div>
           </div>
-          <button class="profile-btn-upload" onclick="document.getElementById('fileInput').click()">
+
+          <button class="profile-btn-upload" id="btnUpload" type="button">
             <svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:currentColor">
               <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-            </svg> Tambah Media Lokal
+            </svg>
+            Tambah Media Lokal
           </button>
+
           <div class="profile-section">
             <div class="section-title">Tampilan</div>
             <div class="theme-options">
-              <button class="theme-btn active" data-theme="default">Default</button>
-              <button class="theme-btn" data-theme="blurred">Blurred Konten</button>
+              <button class="theme-btn active" data-theme="default" type="button">Default</button>
+              <button class="theme-btn" data-theme="blurred" type="button">Blurred Konten</button>
             </div>
-          </div>
-
-          <div class="profile-section">
-            <div class="section-title">Layar</div>
-            <button class="profile-btn-upload profile-fullscreen-btn" id="btnBrowserFullscreen" type="button">
-              <svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:currentColor">
-                <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
-              </svg>
-              <span id="browserFullscreenLabel">Fullscreen Browser</span>
-            </button>
-            <span class="profile-fullscreen-status" id="browserFullscreenStatus">
-              Mode fullscreen browser untuk area aplikasi.
-            </span>
-          </div>
-
-          <div class="profile-section">
-            <div class="section-title">Aplikasi</div>
-            <button class="profile-btn-upload" id="btnInstallPWA" type="button" style="display:none">
-              <svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:currentColor">
-                <path d="M19 9h-4V3H9v6H5l7 7 7-7zm-7 10a1 1 0 0 1-1-1v-2h2v2a1 1 0 0 1-1 1zM5 21h14v-2H5v2z"/>
-              </svg>
-              Pasang sebagai PWA
-            </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Bottom Navigation -->
     <div class="bottom-nav" id="bottomNav">
-      <button class="bottom-btn active" data-nav="home">
-        <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      <button class="bottom-btn active" data-nav="home" type="button">
+        <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8h5z"/></svg>
         <span>Home</span>
       </button>
-      <button class="bottom-btn" data-nav="search">
-        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-        <span>Search</span>
-      </button>
-      <button class="bottom-btn" data-nav="explore">
+      <button class="bottom-btn" data-nav="explore" type="button">
         <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
         <span>Explore</span>
       </button>
-      <button class="bottom-btn" data-nav="profile">
+      <button class="bottom-btn" data-nav="profile" type="button">
         <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
         <span>Profile</span>
       </button>
     </div>
 
-    <!-- Upload Indicator -->
     <div id="upload-loading">
-      <div style="font-size:13px;font-weight:600">Memproses Media...</div>
+      <div style="font-size:13px;font-weight:600">Menyiapkan Media...</div>
       <div class="progress-box"><div class="progress-bar" id="pbar"></div></div>
     </div>
   </div>
 
-  <!-- Dedicated Landscape Fullscreen View: media fullscreen tetap terpisah dari Fullscreen Browser di Profile -->
-  <!-- Dedicated Landscape Fullscreen View -->
-  <div id="fullscreen-landscape">
-    <button id="landscape-close" title="Kembali">✕</button>
-    <video id="landscape-video" playsinline></video>
-    <div class="landscape-timeline-bar" id="lsTimeline">
-      <span class="landscape-time-text" id="lsCurrentTime">00:00</span>
-      <div class="landscape-slider-track" id="lsTrack">
-        <div class="landscape-slider-fill" id="lsFill"></div>
-      </div>
-      <span class="landscape-time-text" id="lsDuration">00:00</span>
-    </div>
-  </div>
-
   <script>
-    let mediaList = [];
-    let currentTab = 'mymedia';
-    let activeLandscapeVideo = null;
-    let uploadedSignatures = new Set();
-    let isHomeActive = true;
-    let currentActiveFeedItem = null; // Menyimpan item aktif myMedia secara konsisten
+    const mediaList = [];
+    const feedMap = new Map();
+    const exploreMap = new Map();
+    const uploadedSignatures = new Set();
 
+    let nextId = 1;
+    let isHomeActive = true;
+    let currentActiveFeedItem = null;
+    let ambientRaf = 0;
+    let ambientLastDraw = 0;
+    let activeAmbientSource = null;
+
+    const appShell = document.getElementById('appShell');
     const homeView = document.getElementById('view-home');
+    const exploreView = document.getElementById('view-explore');
     const exploreGrid = document.getElementById('explore-grid');
     const emptyHome = document.getElementById('empty-home');
     const emptyExplore = document.getElementById('empty-explore');
-    const fsLandscape = document.getElementById('fullscreen-landscape');
-    const lsVideo = document.getElementById('landscape-video');
-    const lsTrack = document.getElementById('lsTrack');
-    const lsFill = document.getElementById('lsFill');
-    const lsCurrentTime = document.getElementById('lsCurrentTime');
-    const lsDuration = document.getElementById('lsDuration');
-    const bgBlur = document.getElementById('bg-blur-ambient');
-    const appShell = document.getElementById('appShell');
+    const fileInput = document.getElementById('fileInput');
     const uploadLoading = document.getElementById('upload-loading');
     const pbar = document.getElementById('pbar');
     const mediaCountTxt = document.getElementById('media-count-txt');
+    const bgCanvas = document.getElementById('bg-blur-canvas');
+    const bgCtx = bgCanvas.getContext('2d', { alpha: true });
 
-    document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
-
-    // IntersectionObserver: HANYA reset video saat scroll berpindah konten feed
-    const obs = new IntersectionObserver((entries) => {
-      entries.forEach(e => {
-        const item = e.target;
-        const m = item.querySelector('video, audio');
-        if (!m) return;
-
-        if (e.isIntersecting) {
-          currentActiveFeedItem = item;
-          if (isHomeActive && !item.dataset.userPaused) {
-            m.play().catch(() => { m.muted = true; m.play(); });
-          }
-          updateAmbientBackground(item);
-
-          if (item.dataset.isLandscape === 'true' && item.triggerRotatePill) {
-            item.triggerRotatePill();
-          }
-        } else {
-          // Ketika item keluar dari viewport KARENA SCROLL KE KONTEN LAIN:
-          m.pause();
-          m.currentTime = 0; // Mengulang hanya saat scroll ke konten lain
-          item.dataset.userPaused = '';
-          if (item.hideRotatePill) {
-            item.hideRotatePill();
-          }
-        }
-      });
-    }, { root: homeView, threshold: 0.65 });
-
-    function updateAmbientBackground(itemEl) {
-      if (!itemEl) return;
-      const id = +itemEl.dataset.id;
-      const data = mediaList.find(m => m.id === id);
-      if (!data) return;
-      if (data.type.startsWith('image/')) {
-        bgBlur.style.backgroundImage = `url('${data.url}')`;
-      } else if (data.type.startsWith('video/')) {
-        const v = itemEl.querySelector('video');
-        if (v) {
-          const c = document.createElement('canvas');
-          c.width = 160; c.height = 90;
-          try {
-            c.getContext('2d').drawImage(v, 0, 0, 160, 90);
-            bgBlur.style.backgroundImage = `url('${c.toDataURL()}')`;
-          } catch (_) {}
-        }
-      } else {
-        bgBlur.style.backgroundImage = 'none';
-      }
+    function updateCounts() {
+      const label = `${mediaList.length} Media dimuat`;
+      mediaCountTxt.textContent = label;
+      emptyHome.style.display = mediaList.length ? 'none' : 'flex';
+      emptyExplore.style.display = mediaList.length ? 'none' : 'flex';
     }
 
-    function getCurrentlyVisibleFeedItem() {
-      if (currentActiveFeedItem && currentActiveFeedItem.style.display !== 'none') {
-        return currentActiveFeedItem;
-      }
-      const items = [...homeView.children].filter(el => el.classList.contains('feed-item') && el.style.display !== 'none');
-      return items.find(el => {
-        const r = el.getBoundingClientRect();
-        return r.top >= -80 && r.bottom <= window.innerHeight + 80;
-      }) || items[0];
-    }
-
-    // Navigasi menu tab bawah: TIDAK me-reset video (hanya pause lalu resume saat kembali)
     function switchBottomNav(name) {
-      document.querySelectorAll('.bottom-btn').forEach(b => b.classList.toggle('active', b.dataset.nav === name));
-      document.querySelectorAll('.view-page').forEach(p => p.classList.remove('active'));
-      const target = document.getElementById('view-' + name);
+      document.querySelectorAll('.bottom-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.nav === name);
+      });
+      document.querySelectorAll('.view-page').forEach(page => page.classList.remove('active'));
+
+      const target = document.getElementById(`view-${name}`);
       if (target) target.classList.add('active');
 
       if (name !== 'home') {
         isHomeActive = false;
-        homeView.querySelectorAll('video, audio').forEach(m => m.pause());
+        clearFeedRotation();
+        stopAllMedia();
+        stopAmbient();
       } else {
         isHomeActive = true;
-        const currentItem = getCurrentlyVisibleFeedItem();
-        if (currentItem) {
-          const m = currentItem.querySelector('video, audio');
-          if (m && !currentItem.dataset.userPaused) {
-            m.play().catch(() => {});
-          }
-          updateAmbientBackground(currentItem);
-        }
+        const item = getCurrentlyVisibleFeedItem();
+        if (item) activateFeedItem(item, true);
       }
     }
 
-    document.querySelectorAll('.bottom-btn').forEach(b => {
-      b.addEventListener('click', () => switchBottomNav(b.dataset.nav));
+    document.querySelectorAll('.bottom-btn').forEach(btn => {
+      btn.addEventListener('click', () => switchBottomNav(btn.dataset.nav));
     });
 
-    // Floating header tabs (myMedia / Liked)
-    // PERBAIKAN: Tidak scroll ke atas/item awal, hanya filter visibility sehingga posisi video saat ini tetap meneruskan
-    document.querySelectorAll('.nav-tab').forEach(t => {
-      t.addEventListener('click', () => {
-        document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
-        t.classList.add('active');
-        currentTab = t.dataset.tab;
-        filterHomeFeed();
-
-        // Pastikan halaman aktif adalah feed
-        switchBottomNav('home');
-
-        // Lanjutkan video pada item yang sedang terlihat tanpa reset timeline
-        const currentItem = getCurrentlyVisibleFeedItem();
-        if (currentItem) {
-          const m = currentItem.querySelector('video, audio');
-          if (m && !currentItem.dataset.userPaused) {
-            m.play().catch(() => {});
-          }
-          updateAmbientBackground(currentItem);
-        }
-      });
-    });
-
-    function applyTheme(theme) {
-      document.querySelectorAll('.theme-btn').forEach(x => x.classList.toggle('active', x.dataset.theme === theme));
-      appShell.classList.toggle('theme-blurred', theme === 'blurred');
-      try { localStorage.setItem('lokalMediaTheme', theme); } catch (_) {}
-    }
-
-    document.querySelectorAll('.theme-btn').forEach(b => {
-      b.addEventListener('click', () => applyTheme(b.dataset.theme));
-    });
-
-    try {
-      const savedTheme = localStorage.getItem('lokalMediaTheme');
-      if (savedTheme === 'blurred' || savedTheme === 'default') applyTheme(savedTheme);
-    } catch (_) {}
-
-    function filterHomeFeed() {
-      let visibleCount = 0;
-      document.querySelectorAll('.feed-item').forEach(item => {
-        const id = +item.dataset.id;
-        const data = mediaList.find(m => m.id === id);
-        const show = (currentTab === 'mymedia') || (currentTab === 'liked' && data && data.liked);
-        item.style.display = show ? 'flex' : 'none';
-        if (show) visibleCount++;
-      });
-      emptyHome.style.display = visibleCount === 0 ? 'flex' : 'none';
-
-      if (currentActiveFeedItem && currentActiveFeedItem.style.display === 'none') {
-        const nextVisible = [...homeView.children].find(el =>
-          el.classList.contains('feed-item') && el.style.display !== 'none'
-        );
-        if (nextVisible) {
-          requestAnimationFrame(() => {
-            homeView.scrollTo({ top: nextVisible.offsetTop, behavior: 'auto' });
-            currentActiveFeedItem = nextVisible;
-          });
-        }
-      }
-    }
-
-
-    // ============================================================
-    // Persistensi media lokal via IndexedDB
-    // ============================================================
-    const DB_NAME = 'lokal-media-feed-db';
-    const DB_VERSION = 1;
-    const STORE_NAME = 'media';
-
-    function openMediaDB() {
-      return new Promise((resolve, reject) => {
-        const req = indexedDB.open(DB_NAME, DB_VERSION);
-        req.onupgradeneeded = () => {
-          const db = req.result;
-          if (!db.objectStoreNames.contains(STORE_NAME)) {
-            db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-          }
-        };
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-      });
-    }
-
-    async function saveMediaRecord(item) {
-      try {
-        const db = await openMediaDB();
-        await new Promise((resolve, reject) => {
-          const tx = db.transaction(STORE_NAME, 'readwrite');
-          tx.objectStore(STORE_NAME).put({
-            id: item.id,
-            file: item.file,
-            liked: !!item.liked,
-            name: item.name,
-            date: item.date,
-            size: item.size,
-            type: item.type
-          });
-          tx.oncomplete = resolve;
-          tx.onerror = () => reject(tx.error);
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const blurred = btn.dataset.theme === 'blurred';
+        document.querySelectorAll('.theme-btn').forEach(b => {
+          b.classList.toggle('active', b === btn);
         });
-        db.close();
-      } catch (_) {}
-    }
-
-    async function updatePersistedLike(item) {
-      try {
-        const db = await openMediaDB();
-        await new Promise((resolve, reject) => {
-          const tx = db.transaction(STORE_NAME, 'readwrite');
-          const store = tx.objectStore(STORE_NAME);
-          const req = store.get(item.id);
-          req.onsuccess = () => {
-            const record = req.result;
-            if (record) {
-              record.liked = !!item.liked;
-              store.put(record);
-            }
-          };
-          tx.oncomplete = resolve;
-          tx.onerror = () => reject(tx.error);
-        });
-        db.close();
-      } catch (_) {}
-    }
-
-    async function loadPersistedMedia() {
-      try {
-        const db = await openMediaDB();
-        const records = await new Promise((resolve, reject) => {
-          const tx = db.transaction(STORE_NAME, 'readonly');
-          const req = tx.objectStore(STORE_NAME).getAll();
-          req.onsuccess = () => resolve(req.result || []);
-          req.onerror = () => reject(req.error);
-        });
-        db.close();
-
-        for (const record of records) {
-          if (!record || !record.file) continue;
-          const url = URL.createObjectURL(record.file);
-          const item = {
-            id: record.id,
-            file: record.file,
-            url,
-            liked: !!record.liked,
-            type: record.type || record.file.type || '',
-            name: record.name || record.file.name || 'Media Lokal',
-            date: record.date || new Date(record.file.lastModified || Date.now()).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'}),
-            size: record.size || ((record.file.size / (1024 * 1024)).toFixed(2) + ' MB'),
-            metadata: null,
-            coverUrl: '',
-            artist: '',
-            album: '',
-            title: ''
-          };
-          mediaList.push(item);
-          uploadedSignatures.add(`${record.file.name}_${record.file.size}_${record.file.lastModified}`);
-          createFeedElement(item);
-          createExploreElement(item);
-        }
-
-        mediaCountTxt.textContent = `${mediaList.length} Media dimuat`;
-        emptyHome.style.display = mediaList.length ? 'none' : 'flex';
-        emptyExplore.style.display = mediaList.length ? 'none' : 'flex';
-      } catch (_) {}
-    }
-
-    // Input Media Lokal
-    document.getElementById('fileInput').addEventListener('change', e => {
-      const rawFiles = Array.from(e.target.files);
-      if (!rawFiles.length) return;
-      const files = rawFiles.filter(f => {
-        const sig = `${f.name}_${f.size}_${f.lastModified}`;
-        if (uploadedSignatures.has(sig)) return false;
-        uploadedSignatures.add(sig);
-        return true;
+        appShell.classList.toggle('theme-blurred', blurred);
+        if (!blurred) clearAmbientCanvas();
       });
-      if (!files.length) { e.target.value = ''; return; }
-
-      uploadLoading.style.display = 'flex';
-      pbar.style.width = '0%';
-      let progress = 0;
-      const timer = setInterval(() => {
-        progress += 25;
-        pbar.style.width = progress + '%';
-        if (progress >= 100) {
-          clearInterval(timer);
-          setTimeout(() => {
-            uploadLoading.style.display = 'none';
-            files.forEach(f => {
-              const id = Date.now() + Math.random();
-              const url = URL.createObjectURL(f);
-              const dateObj = new Date(f.lastModified || Date.now());
-              const dateStr = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-              const item = {
-                id,
-                file: f,
-                url,
-                liked: false,
-                type: f.type,
-                name: f.name,
-                date: dateStr,
-                size: (f.size / (1024 * 1024)).toFixed(2) + ' MB',
-                metadata: null,
-                coverUrl: '',
-                artist: '',
-                album: '',
-                title: ''
-              };
-              mediaList.push(item);
-              createFeedElement(item);
-              createExploreElement(item);
-              saveMediaRecord(item);
-            });
-            emptyHome.style.display = 'none';
-            emptyExplore.style.display = 'none';
-            mediaCountTxt.textContent = `${mediaList.length} Media dimuat`;
-            switchBottomNav('home');
-            e.target.value = '';
-          }, 200);
-        }
-      }, 50);
     });
+
+    document.getElementById('btnUpload').addEventListener('click', () => fileInput.click());
 
     function formatTime(seconds) {
-      if (isNaN(seconds) || seconds < 0) return '00:00';
+      if (!Number.isFinite(seconds) || seconds < 0) return '00:00';
       const m = Math.floor(seconds / 60);
       const s = Math.floor(seconds % 60);
       return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
     }
 
-    function createFeedElement(data) {
-      const el = document.createElement('div');
-      el.className = 'feed-item';
-      el.dataset.id = data.id;
+    function getCurrentlyVisibleFeedItem() {
+      if (currentActiveFeedItem && currentActiveFeedItem.isConnected && currentActiveFeedItem.style.display !== 'none') {
+        return currentActiveFeedItem;
+      }
 
-      let inner = '';
-      if (data.type.startsWith('video/')) {
-        inner = `<video class="media-content" src="${data.url}" loop playsinline preload="metadata"></video>`;
-      } else if (data.type.startsWith('audio/')) {
-        inner = `
-          <div class="audio-box">
-            <div class="audio-cover-wrap">
-              <img class="audio-cover" alt="" style="display:none">
-              <svg class="audio-default-icon" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
-            </div>
-            <div class="audio-title">Audio Lokal</div>
-            <div class="audio-artist"></div>
-          </div>
-          <audio src="${data.url}" loop preload="metadata" style="display:none"></audio>
-        `;
+      const items = [...feedMap.values()];
+      const viewRect = homeView.getBoundingClientRect();
+
+      let best = null;
+      let bestRatio = 0;
+
+      for (const item of items) {
+        if (item.style.display === 'none') continue;
+        const r = item.getBoundingClientRect();
+        const visible = Math.max(0, Math.min(r.bottom, viewRect.bottom) - Math.max(r.top, viewRect.top));
+        const ratio = visible / Math.max(1, r.height);
+        if (ratio > bestRatio) {
+          bestRatio = ratio;
+          best = item;
+        }
+      }
+
+      return best || items[0] || null;
+    }
+
+    function stopAllMedia(except = null) {
+      document.querySelectorAll('#view-home video, #view-home audio').forEach(media => {
+        if (media !== except) media.pause();
+      });
+    }
+
+    async function playOnly(media, item) {
+      if (!media || !item || !isHomeActive || item !== currentActiveFeedItem) return;
+
+      stopAllMedia(media);
+
+      try {
+        await media.play();
+      } catch (_) {
+        if (media instanceof HTMLVideoElement || media instanceof HTMLAudioElement) {
+          media.muted = true;
+          try { await media.play(); } catch (_) {}
+        }
+      }
+    }
+
+    function removeFeedMedia(item) {
+      const host = item.querySelector('.media-host');
+      const media = host?.querySelector('video, audio, img');
+      if (!media) return;
+
+      if (media.tagName === 'VIDEO' || media.tagName === 'AUDIO') {
+        media.pause();
+        media.removeAttribute('src');
+        media.load();
       } else {
-        inner = `<img class="media-content" src="${data.url}" alt="">`;
+        media.removeAttribute('src');
       }
 
-      el.innerHTML = `
-        <div class="media-wrapper">
-          ${inner}
-          <!-- Ikon Pause: Segitiga murni tanpa latar -->
-          <div class="pause-triangle-badge">
-            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-          </div>
-          <!-- Notif Rotate Phone Ramping, Border Tipis, Putih, Menghilang setelah 4s -->
-          <div class="rotate-pill" title="Putar Layar Penuh">
-            <svg viewBox="0 0 24 24">
-              <path d="M16.48 2.52c3.27 1.55 5.61 4.72 5.97 8.48h1.5C23.44 4.84 18.29 0 12 0l-.66.03 3.81 3.81 1.33-1.32zm-10.96 4l-1.33 1.32C2.25 9.4 0 12.57 0 16.33h1.5c.36-3.76 2.7-6.93 5.97-8.48L6.15 6.52h1.37zm1.96 14.96c-3.27-1.55-5.61-4.72-5.97-8.48H0c.51 6.16 5.66 11 11.95 11l.66-.03-3.81-3.81-1.32 1.32zm10.96-4l1.33-1.32c1.94-1.56 4.19-4.73 4.19-8.49h-1.5c-.36 3.76-2.7 6.93-5.97 8.48l1.32 1.33h-1.37zM7 19h10V5H7v14zm2-12h6v10H9V7z"/>
-            </svg>
-            <span>Rotate Phone</span>
-          </div>
-        </div>
-        <div class="overlay-info">
-          <div class="meta-user">@lokal.${data.type.split('/')[0] || 'file'}</div>
-          <div class="meta-desc">${data.name}</div>
-          <div class="meta-tags">
-            <span>Res: <b class="res">...</b></span>
-            <span>•</span>
-            <span>${data.date}</span>
-          </div>
-        </div>
-        <div class="sidebar">
-          <button class="side-btn btn-like">
-            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-            <span>Suka</span>
-          </button>
-        </div>
-      `;
+      media.remove();
+      host.appendChild(makeMediaPlaceholder());
+    }
 
-      const wrapper = el.querySelector('.media-wrapper');
-      const vid = el.querySelector('video');
-      const img = el.querySelector('img');
-      const aud = el.querySelector('audio');
-      const mediaEl = vid || aud;
-      const res = el.querySelector('.res');
-      const likeBtn = el.querySelector('.btn-like');
-      const pill = el.querySelector('.rotate-pill');
-      const pauseBadge = el.querySelector('.pause-triangle-badge');
-      const audioCover = el.querySelector('.audio-cover');
-      const audioDefaultIcon = el.querySelector('.audio-default-icon');
-      const audioTitle = el.querySelector('.audio-title');
-      const audioArtist = el.querySelector('.audio-artist');
+    function makeMediaPlaceholder() {
+      const node = document.createElement('div');
+      node.className = 'media-placeholder';
+      return node;
+    }
 
-      let pillDismissTimer = null;
-      function showRotatePillFor4s() {
-        if (el.dataset.isLandscape !== 'true') return;
-        pill.classList.add('visible');
-        clearTimeout(pillDismissTimer);
-        pillDismissTimer = setTimeout(() => {
-          pill.classList.remove('visible');
-        }, 4000);
-      }
+    function ensureFeedMedia(item, data) {
+      const host = item.querySelector('.media-host');
+      if (!host) return null;
 
-      function hideRotatePillImmediately() {
-        clearTimeout(pillDismissTimer);
-        pill.classList.remove('visible');
-      }
+      let media = host.querySelector('video, audio, img');
+      if (media) return media;
 
-      el.triggerRotatePill = showRotatePillFor4s;
-      el.hideRotatePill = hideRotatePillImmediately;
+      host.textContent = '';
 
-      if (vid) {
-        vid.addEventListener('loadedmetadata', () => {
-          res.textContent = `${vid.videoWidth}x${vid.videoHeight}`;
-          if (vid.videoWidth > vid.videoHeight) {
-            el.dataset.isLandscape = 'true';
-            showRotatePillFor4s();
+      if (data.type.startsWith('video/')) {
+        media = document.createElement('video');
+        media.className = 'media-content';
+        media.src = data.url;
+        media.loop = true;
+        media.playsInline = true;
+        media.preload = 'metadata';
+        media.muted = true;
+        media.controls = false;
+
+        media.addEventListener('loadedmetadata', () => {
+          item.querySelector('.res').textContent = `${media.videoWidth}x${media.videoHeight}`;
+          const landscape = media.videoWidth > media.videoHeight;
+          item.dataset.isLandscape = landscape ? 'true' : 'false';
+          const pill = item.querySelector('.rotate-pill');
+          pill.hidden = !landscape;
+          if (landscape) showRotatePill(item);
+        }, { once: false });
+
+        media.addEventListener('timeupdate', () => {
+          if (item === currentActiveFeedItem && appShell.classList.contains('theme-blurred')) {
+            scheduleAmbient(item);
           }
         });
-        pill.addEventListener('click', (e) => {
-          e.stopPropagation();
-          enterLandscape(vid);
-        });
-      } else if (img) {
-        img.addEventListener('load', () => {
-          res.textContent = `${img.naturalWidth}x${img.naturalHeight}`;
-        });
-      } else if (aud) {
-        aud.addEventListener('loadedmetadata', () => {
-          res.textContent = 'Audio (' + formatTime(aud.duration) + ')';
-        });
 
-        // Baca metadata cover/judul/artis dari tag ID3 MP3 secara lokal.
+        host.appendChild(media);
+      } else if (data.type.startsWith('image/')) {
+        media = document.createElement('img');
+        media.className = 'media-content';
+        media.alt = '';
+        media.src = data.url;
+        media.decoding = 'async';
+        media.addEventListener('load', () => {
+          item.querySelector('.res').textContent = `${media.naturalWidth}x${media.naturalHeight}`;
+          scheduleAmbient(item);
+        }, { once: true });
+        host.appendChild(media);
+      } else {
+        const box = document.createElement('div');
+        box.className = 'audio-box';
+
+        const cover = document.createElement('img');
+        cover.className = 'audio-cover';
+        cover.alt = '';
+
+        const defaultIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        defaultIcon.setAttribute('class', 'audio-default-icon');
+        defaultIcon.setAttribute('viewBox', '0 0 24 24');
+        defaultIcon.innerHTML = '<path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>';
+
+        const title = document.createElement('div');
+        title.className = 'audio-title';
+        title.textContent = data.title || 'Audio Lokal';
+
+        const artist = document.createElement('div');
+        artist.className = 'audio-artist';
+        artist.textContent = data.artist || '';
+
+        box.append(cover, defaultIcon, title, artist);
+        host.appendChild(box);
+
+        media = document.createElement('audio');
+        media.src = data.url;
+        media.loop = true;
+        media.preload = 'metadata';
+        media.muted = true;
+        media.style.display = 'none';
+
+        media.addEventListener('loadedmetadata', () => {
+          item.querySelector('.res').textContent = `Audio (${formatTime(media.duration)})`;
+        }, { once: true });
+
+        host.appendChild(media);
+
         readAudioMetadata(data.file).then(meta => {
-          if (!meta) return;
+          if (!meta || !item.isConnected) return;
           data.metadata = meta;
           data.artist = meta.artist || '';
           data.album = meta.album || '';
           data.title = meta.title || '';
-          if (meta.title) audioTitle.textContent = meta.title;
-          if (meta.artist) audioArtist.textContent = meta.artist;
-          if (meta.coverUrl && audioCover) {
-            audioCover.src = meta.coverUrl;
-            audioCover.style.display = 'block';
-            if (audioDefaultIcon) audioDefaultIcon.style.display = 'none';
-            bgBlur.style.backgroundImage = `url('${meta.coverUrl}')`;
-          }
-          const parts = [];
-          if (meta.artist) parts.push(meta.artist);
-          if (meta.album) parts.push(meta.album);
-          if (parts.length) {
-            res.textContent = parts.join(' • ');
-          }
-          const desc = el.querySelector('.meta-desc');
-          if (desc && (meta.title || meta.artist)) {
-            desc.textContent = [meta.title, meta.artist].filter(Boolean).join(' — ') || data.name;
+
+          title.textContent = data.title || 'Audio Lokal';
+          artist.textContent = data.artist || '';
+
+          const desc = item.querySelector('.meta-desc');
+          if (desc) desc.textContent = [data.title, data.artist].filter(Boolean).join(' — ') || data.name;
+
+          const parts = [data.artist, data.album].filter(Boolean);
+          if (parts.length) item.querySelector('.res').textContent = parts.join(' • ');
+
+          if (meta.coverUrl) {
+            cover.src = meta.coverUrl;
+            cover.style.display = 'block';
+            defaultIcon.style.display = 'none';
+            scheduleAmbient(item);
+            prepareAudioThumb(data, meta.coverUrl);
           }
         }).catch(() => {});
       }
 
-      function popHeartCenter() {
-        data.liked = true;
-        likeBtn.classList.add('liked');
-        updatePersistedLike(data);
-        const h = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        h.setAttribute('viewBox', '0 0 24 24');
-        h.setAttribute('class', 'heart-center');
-        h.innerHTML = '<path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>';
-        wrapper.appendChild(h);
-        setTimeout(() => h.remove(), 420);
+      return media;
+    }
+
+    function activateFeedItem(item, autoPlay = false) {
+      if (!item || !item.isConnected) return;
+
+      currentActiveFeedItem = item;
+      const data = mediaList.find(m => m.id === Number(item.dataset.id));
+      if (!data) return;
+
+      const media = ensureFeedMedia(item, data);
+      if (!media) return;
+
+      if (autoPlay && media.tagName !== 'IMG' && !item.dataset.userPaused) {
+        playOnly(media, item);
       }
+
+      scheduleAmbient(item);
+    }
+
+    function deactivateFeedItem(item) {
+      const media = item.querySelector('video, audio');
+      if (media) media.pause();
+      item.dataset.userPaused = '';
+      item.classList.remove('rotated');
+
+      if (item === currentActiveFeedItem) {
+        stopAmbient();
+      }
+
+      // Keep the active item warm; release media nodes for distant items only.
+      const rect = item.getBoundingClientRect();
+      const viewRect = homeView.getBoundingClientRect();
+      const far = rect.bottom < viewRect.top - viewRect.height * 1.4 || rect.top > viewRect.bottom + viewRect.height * 1.4;
+      if (far) removeFeedMedia(item);
+    }
+
+    const feedObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        const item = entry.target;
+        if (entry.isIntersecting && entry.intersectionRatio >= .65) {
+          if (!isHomeActive) return;
+          activateFeedItem(item, true);
+          showRotatePill(item);
+        } else if (entry.intersectionRatio < .2) {
+          if (item !== currentActiveFeedItem || !isHomeActive) deactivateFeedItem(item);
+        }
+      });
+    }, {
+      root: homeView,
+      threshold: [0, .2, .65, 1]
+    });
+
+    function createFeedElement(data) {
+      const item = document.createElement('div');
+      item.className = 'feed-item';
+      item.dataset.id = String(data.id);
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'media-wrapper';
+
+      const host = document.createElement('div');
+      host.className = 'media-host';
+      host.appendChild(makeMediaPlaceholder());
+
+      const pauseBadge = document.createElement('div');
+      pauseBadge.className = 'pause-triangle-badge';
+      pauseBadge.innerHTML = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+
+      const rotatePill = document.createElement('button');
+      rotatePill.className = 'rotate-pill';
+      rotatePill.type = 'button';
+      rotatePill.hidden = true;
+      rotatePill.title = 'Putar media di dalam feed';
+      rotatePill.innerHTML = '<svg viewBox="0 0 24 24"><path d="M16.48 2.52c3.27 1.55 5.61 4.72 5.97 8.48h1.5C23.44 4.84 18.29 0 12 0l-.66.03 3.81 3.81 1.33-1.32zm-10.96 4l-1.33 1.32C2.25 9.4 0 12.57 0 16.33h1.5c.36-3.76 2.7-6.93 5.97-8.48L6.15 6.52h1.37zm1.96 14.96c-3.27-1.55-5.61-4.72-5.97-8.48H0c.51 6.16 5.66 11 11.95 11l.66-.03-3.81-3.81-1.32 1.32zm10.96-4l1.33-1.32c1.94-1.56 4.19-4.73 4.19-8.49h-1.5c-.36 3.76-2.7 6.93-5.97 8.48l1.32 1.33h-1.37zM7 19h10V5H7v14zm2-12h6v10H9V7z"/></svg>';
+      const rotateText = document.createElement('span');
+      rotateText.textContent = 'Rotate';
+      rotatePill.appendChild(rotateText);
+
+      wrapper.append(host, pauseBadge, rotatePill);
+
+      const info = document.createElement('div');
+      info.className = 'overlay-info';
+
+      const user = document.createElement('div');
+      user.className = 'meta-user';
+      user.textContent = `@lokal.${data.type.split('/')[0] || 'file'}`;
+
+      const desc = document.createElement('div');
+      desc.className = 'meta-desc';
+      desc.textContent = data.name;
+
+      const tags = document.createElement('div');
+      tags.className = 'meta-tags';
+
+      const resWrap = document.createElement('span');
+      resWrap.textContent = 'Res: ';
+      const res = document.createElement('b');
+      res.className = 'res';
+      res.textContent = '...';
+      resWrap.appendChild(res);
+
+      const bullet = document.createElement('span');
+      bullet.textContent = '•';
+
+      const date = document.createElement('span');
+      date.textContent = data.date;
+      tags.append(resWrap, bullet, date);
+      info.append(user, desc, tags);
+
+      const sidebar = document.createElement('div');
+      sidebar.className = 'sidebar';
+
+      const likeBtn = document.createElement('button');
+      likeBtn.className = 'side-btn btn-like';
+      likeBtn.type = 'button';
+      likeBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg><span>Suka</span>';
+
+      sidebar.appendChild(likeBtn);
+      item.append(wrapper, info, sidebar);
+
+      const showRotatePill = () => {
+        if (item.dataset.isLandscape !== 'true' || !isHomeActive) return;
+        rotatePill.classList.add('visible');
+        window.clearTimeout(item._rotateTimer);
+        item._rotateTimer = window.setTimeout(() => {
+          rotatePill.classList.remove('visible');
+        }, 4000);
+      };
+
+      const hideRotatePill = () => {
+        window.clearTimeout(item._rotateTimer);
+        rotatePill.classList.remove('visible');
+      };
+
+      item._showRotatePill = showRotatePill;
+      item._hideRotatePill = hideRotatePill;
+
+      rotatePill.addEventListener('pointerup', event => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const media = item.querySelector('video');
+        if (!media) return;
+
+        if (item.classList.contains('rotated')) {
+          item.classList.remove('rotated');
+          appShell.classList.remove('feed-rotated');
+          rotateText.textContent = 'Rotate';
+          showRotatePill();
+        } else {
+          clearFeedRotation();
+          item.classList.add('rotated');
+          appShell.classList.add('feed-rotated');
+          rotateText.textContent = 'Kembali';
+          rotatePill.classList.add('visible');
+          hideRotatePill();
+          rotatePill.classList.add('visible');
+        }
+      });
+
+      likeBtn.addEventListener('pointerup', event => {
+        event.preventDefault();
+        event.stopPropagation();
+        data.liked = !data.liked;
+        likeBtn.classList.toggle('liked', data.liked);
+      });
+
+      let pointerDownX = 0;
+      let pointerDownY = 0;
+      let pointerMoved = false;
+      let tapCount = 0;
+      let tapTimer = 0;
+
+      wrapper.addEventListener('pointerdown', event => {
+        if (event.button !== undefined && event.button !== 0) return;
+        pointerDownX = event.clientX;
+        pointerDownY = event.clientY;
+        pointerMoved = false;
+      });
+
+      wrapper.addEventListener('pointermove', event => {
+        if (Math.abs(event.clientX - pointerDownX) > 10 || Math.abs(event.clientY - pointerDownY) > 10) {
+          pointerMoved = true;
+        }
+      });
+
+      wrapper.addEventListener('pointerup', event => {
+        if (pointerMoved || event.target === rotatePill || rotatePill.contains(event.target)) return;
+
+        tapCount++;
+        if (tapCount === 1) {
+          window.clearTimeout(tapTimer);
+          tapTimer = window.setTimeout(() => {
+            tapCount = 0;
+            const media = item.querySelector('video, audio');
+            if (!media) return;
+
+            if (media.paused) {
+              item.dataset.userPaused = '';
+              playOnly(media, item);
+            } else {
+              media.pause();
+              item.dataset.userPaused = 'true';
+              triggerPauseTriangle();
+            }
+          }, 250);
+        } else {
+          window.clearTimeout(tapTimer);
+          tapCount = 0;
+          data.liked = true;
+          likeBtn.classList.add('liked');
+          popHeartCenter();
+        }
+      });
 
       function triggerPauseTriangle() {
         pauseBadge.classList.remove('animate-triangle');
-        void pauseBadge.offsetWidth; // Force re-render
+        void pauseBadge.offsetWidth;
         pauseBadge.classList.add('animate-triangle');
-        setTimeout(() => {
-          pauseBadge.classList.remove('animate-triangle');
-        }, 340);
       }
 
-      likeBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        data.liked = !data.liked;
-        likeBtn.classList.toggle('liked', data.liked);
-        updatePersistedLike(data);
-        if (currentTab === 'liked') filterHomeFeed();
+      function popHeartCenter() {
+        const heart = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        heart.setAttribute('viewBox', '0 0 24 24');
+        heart.setAttribute('class', 'heart-center');
+        heart.innerHTML = '<path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>';
+        wrapper.appendChild(heart);
+        window.setTimeout(() => heart.remove(), 420);
+      }
+
+      homeView.appendChild(item);
+      feedMap.set(data.id, item);
+      feedObserver.observe(item);
+      return item;
+    }
+
+    let exploreThumbQueue = [];
+    let exploreThumbBusy = 0;
+    const MAX_THUMB_WORKERS = 2;
+
+    const exploreObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        const card = entry.target;
+        const id = Number(card.dataset.id);
+        const data = mediaList.find(m => m.id === id);
+        if (!data) return;
+        queueExploreThumbnail(card, data);
+        exploreObserver.unobserve(card);
       });
+    }, {
+      root: exploreView,
+      rootMargin: '360px 0px',
+      threshold: .01
+    });
 
-      // ========================================================
-      // PERBAIKAN LOGIKA TAP:
-      // - 1 Klik / Tap -> PAUSE / PLAY (memunculkan segitiga fade singkat)
-      // - 2 Klik / Tap Cepat -> LIKE (animasi hati pop-up)
-      // ========================================================
-      let touchStartY = 0;
-      let touchStartX = 0;
-      let isTouchMoved = false;
-      let clickTimer = null;
-      let tapCount = 0;
+    function queueExploreThumbnail(card, data) {
+      if (card.dataset.thumbQueued === 'true' || card.dataset.thumbReady === 'true') return;
+      card.dataset.thumbQueued = 'true';
+      exploreThumbQueue.push({ card, data });
+      pumpThumbnailQueue();
+    }
 
-      wrapper.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 1) {
-          touchStartY = e.touches[0].clientY;
-          touchStartX = e.touches[0].clientX;
-          isTouchMoved = false;
+    function pumpThumbnailQueue() {
+      while (exploreThumbBusy < MAX_THUMB_WORKERS && exploreThumbQueue.length) {
+        const job = exploreThumbQueue.shift();
+        exploreThumbBusy++;
+        renderExploreThumbnail(job.card, job.data)
+          .catch(() => {})
+          .finally(() => {
+            exploreThumbBusy--;
+            pumpThumbnailQueue();
+          });
+      }
+    }
+
+    async function renderExploreThumbnail(card, data) {
+      const holder = card.querySelector('.thumb-holder');
+      if (!holder) return;
+
+      const url = await getSmallThumbnail(data);
+
+      if (!card.isConnected) return;
+
+      holder.textContent = '';
+      if (url) {
+        const img = document.createElement('img');
+        img.className = 'grid-thumb';
+        img.alt = '';
+        img.src = url;
+        img.decoding = 'async';
+        img.onload = () => img.classList.add('ready');
+        holder.appendChild(img);
+      }
+
+      card.dataset.thumbReady = 'true';
+      card.classList.remove('loading');
+    }
+
+    async function getSmallThumbnail(data) {
+      if (data.thumbUrl) return data.thumbUrl;
+
+      if (data.type.startsWith('image/')) {
+        data.thumbUrl = await createImageThumbnail(data.file, 280);
+        return data.thumbUrl;
+      }
+
+      if (data.type.startsWith('video/')) {
+        data.thumbUrl = await createVideoThumbnail(data.file, 280, 360);
+        return data.thumbUrl;
+      }
+
+      if (data.type.startsWith('audio/') && data.coverUrl) {
+        data.thumbUrl = await createImageThumbnail(await (await fetch(data.coverUrl)).blob(), 280);
+        return data.thumbUrl;
+      }
+
+      return '';
+    }
+
+    async function createImageThumbnail(fileOrBlob, maxSize = 280) {
+      const src = URL.createObjectURL(fileOrBlob);
+      try {
+        const img = new Image();
+        img.decoding = 'async';
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+          img.src = src;
+        });
+
+        const scale = Math.min(1, maxSize / Math.max(img.naturalWidth, img.naturalHeight));
+        const w = Math.max(1, Math.round(img.naturalWidth * scale));
+        const h = Math.max(1, Math.round(img.naturalHeight * scale));
+
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d', { alpha: false });
+        ctx.drawImage(img, 0, 0, w, h);
+
+        const blob = await canvasToBlob(canvas, 'image/jpeg', .78);
+        return URL.createObjectURL(blob);
+      } finally {
+        URL.revokeObjectURL(src);
+      }
+    }
+
+    async function createVideoThumbnail(file, maxW = 280, maxH = 360) {
+      const src = URL.createObjectURL(file);
+      const video = document.createElement('video');
+      video.src = src;
+      video.muted = true;
+      video.playsInline = true;
+      video.preload = 'metadata';
+
+      try {
+        await waitForEvent(video, 'loadedmetadata', 12000);
+        const targetTime = Math.min(Math.max(video.duration * .25, .2), Math.max(.2, video.duration - .1));
+        if (Number.isFinite(video.duration)) {
+          video.currentTime = targetTime;
+          await waitForEvent(video, 'seeked', 12000).catch(() => {});
         }
-        showRotatePillFor4s();
-      }, { passive: true });
 
-      wrapper.addEventListener('touchmove', (e) => {
-        if (e.touches.length === 1) {
-          const dy = Math.abs(e.touches[0].clientY - touchStartY);
-          const dx = Math.abs(e.touches[0].clientX - touchStartX);
-          if (dy > 8 || dx > 8) {
-            isTouchMoved = true;
+        const ratio = video.videoWidth / Math.max(1, video.videoHeight);
+        let w = maxW;
+        let h = Math.round(w / ratio);
+
+        if (h > maxH) {
+          h = maxH;
+          w = Math.round(h * ratio);
+        }
+
+        w = Math.max(1, w);
+        h = Math.max(1, h);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d', { alpha: false });
+        ctx.drawImage(video, 0, 0, w, h);
+
+        const blob = await canvasToBlob(canvas, 'image/jpeg', .76);
+        return URL.createObjectURL(blob);
+      } finally {
+        video.pause();
+        video.removeAttribute('src');
+        video.load();
+        URL.revokeObjectURL(src);
+      }
+    }
+
+    function prepareAudioThumb(data, coverUrl) {
+      if (data.thumbUrl) return;
+      fetch(coverUrl)
+        .then(r => r.blob())
+        .then(blob => createImageThumbnail(blob, 280))
+        .then(url => {
+          data.thumbUrl = url;
+          const card = exploreMap.get(data.id);
+          if (card && card.dataset.thumbReady === 'true') {
+            const old = card.querySelector('.grid-thumb');
+            const img = document.createElement('img');
+            img.className = 'grid-thumb';
+            img.alt = '';
+            img.src = url;
+            img.onload = () => img.classList.add('ready');
+            if (old) old.replaceWith(img);
+            else card.querySelector('.thumb-holder').appendChild(img);
+          }
+        })
+        .catch(() => {});
+    }
+
+    function waitForEvent(target, type, timeoutMs = 10000) {
+      return new Promise((resolve, reject) => {
+        let done = false;
+        const cleanup = () => {
+          target.removeEventListener(type, onEvent);
+          target.removeEventListener('error', onError);
+          if (timer) clearTimeout(timer);
+        };
+        const onEvent = () => {
+          if (done) return;
+          done = true;
+          cleanup();
+          resolve();
+        };
+        const onError = event => {
+          if (done) return;
+          done = true;
+          cleanup();
+          reject(event);
+        };
+        const timer = setTimeout(() => {
+          if (done) return;
+          done = true;
+          cleanup();
+          reject(new Error(`Timeout menunggu ${type}`));
+        }, timeoutMs);
+
+        target.addEventListener(type, onEvent, { once: true });
+        target.addEventListener('error', onError, { once: true });
+      });
+    }
+
+    function canvasToBlob(canvas, type, quality) {
+      return new Promise((resolve, reject) => {
+        if (canvas.toBlob) {
+          canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Canvas kosong')), type, quality);
+        } else {
+          try {
+            const data = canvas.toDataURL(type, quality);
+            const bytes = atob(data.split(',')[1]);
+            const buf = new Uint8Array(bytes.length);
+            for (let i = 0; i < bytes.length; i++) buf[i] = bytes.charCodeAt(i);
+            resolve(new Blob([buf], { type }));
+          } catch (err) {
+            reject(err);
           }
         }
-      }, { passive: true });
-
-      wrapper.addEventListener('touchend', (e) => {
-        if (isTouchMoved) {
-          tapCount = 0;
-          clearTimeout(clickTimer);
-          return;
-        }
-        handleUnifiedTap(e);
       });
-
-      // Desktop click
-      wrapper.addEventListener('click', (e) => {
-        if ('ontouchstart' in window) return; // Pada touch screen, touchend yang menangani
-        showRotatePillFor4s();
-        handleUnifiedTap(e);
-      });
-
-      function handleUnifiedTap(e) {
-        if (e.target === pill || pill.contains(e.target)) return;
-        tapCount++;
-
-        if (tapCount === 1) {
-          clickTimer = setTimeout(() => {
-            // SINGLE CLICK -> HANYA PAUSE / PLAY
-            if (mediaEl) {
-              if (mediaEl.paused) {
-                mediaEl.play().catch(() => {});
-                el.dataset.userPaused = '';
-              } else {
-                mediaEl.pause();
-                el.dataset.userPaused = 'true';
-                triggerPauseTriangle(); // Munculkan segitiga tanpa latar lalu fade out
-              }
-            }
-            tapCount = 0;
-          }, 260);
-        } else if (tapCount >= 2) {
-          // DOUBLE CLICK -> HANYA LIKE (TIDAK MEM-PAUSE VIDEO)
-          clearTimeout(clickTimer);
-          tapCount = 0;
-          popHeartCenter();
-        }
-      }
-
-      homeView.appendChild(el);
-      obs.observe(el);
     }
 
     function createExploreElement(data) {
       const card = document.createElement('div');
-      card.className = 'grid-item';
+      card.className = 'grid-item loading';
+      card.dataset.id = String(data.id);
 
-      let thumb = '';
-      if (data.type.startsWith('video/')) {
-        thumb = `<video class="grid-thumb" src="${data.url}#t=0.5" preload="metadata" muted></video>`;
-      } else if (data.type.startsWith('image/')) {
-        thumb = `<img class="grid-thumb" src="${data.url}" alt="">`;
-      } else {
-        thumb = `
-          <div class="grid-thumb" style="display:flex;align-items:center;justify-content:center;background:#222">
-            <svg viewBox="0 0 24 24" style="width:32px;height:32px;fill:#888"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
-          </div>
-        `;
-      }
+      const holder = document.createElement('div');
+      holder.className = 'thumb-holder';
+      holder.style.cssText = 'width:100%;height:100%;position:absolute;inset:0;display:block;';
 
-      // Overlay Eksplor menunjukkan Nama dan Tanggal
-      card.innerHTML = `
-        ${thumb}
-        <div class="grid-overlay">
-          <div class="grid-item-title">${data.name}</div>
-          <div class="grid-item-date">${data.date}</div>
-        </div>
-      `;
+      const overlay = document.createElement('div');
+      overlay.className = 'grid-overlay';
+
+      const title = document.createElement('div');
+      title.className = 'grid-item-title';
+      title.textContent = data.name;
+
+      const date = document.createElement('div');
+      date.className = 'grid-item-date';
+      date.textContent = data.date;
+
+      overlay.append(title, date);
+      card.append(holder, overlay);
 
       card.addEventListener('click', () => {
         switchBottomNav('home');
-        const target = [...homeView.children].find(c => +c.dataset.id === data.id);
-        if (target) target.scrollIntoView({ behavior: 'smooth' });
+        const target = feedMap.get(data.id);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
       });
+
       exploreGrid.appendChild(card);
+      exploreMap.set(data.id, card);
+      exploreObserver.observe(card);
+      return card;
     }
 
-    // Rotasi Landscape & Timestamp Bar
-    function enterLandscape(sourceVid) {
-      activeLandscapeVideo = sourceVid;
-      lsVideo.src = sourceVid.src;
-      lsVideo.currentTime = sourceVid.currentTime;
-      sourceVid.pause();
+    function clearFeedRotation() {
+      appShell.classList.remove('feed-rotated');
+      document.querySelectorAll('.feed-item.rotated').forEach(item => {
+        item.classList.remove('rotated');
+        const pill = item.querySelector('.rotate-pill span');
+        if (pill) pill.textContent = 'Rotate';
+      });
+    }
 
-      fsLandscape.style.display = 'flex';
-      lsVideo.play().catch(() => {});
+    function showRotatePill(item) {
+      if (!item?._showRotatePill) return;
+      if (item.dataset.isLandscape === 'true') item._showRotatePill();
+    }
 
-      if (fsLandscape.requestFullscreen) {
-        fsLandscape.requestFullscreen().catch(() => {});
-      }
-      if (screen.orientation && screen.orientation.lock) {
-        screen.orientation.lock('landscape').catch(() => {});
+    function drawCoverToCanvas(img, opacity = 1) {
+      resizeAmbientCanvas();
+      const w = bgCanvas.width;
+      const h = bgCanvas.height;
+      bgCtx.clearRect(0, 0, w, h);
+      bgCtx.globalAlpha = opacity;
+      drawCover(bgCtx, img, w, h);
+      bgCtx.globalAlpha = 1;
+    }
+
+    function drawCover(ctx, source, width, height) {
+      const sw = source.videoWidth || source.naturalWidth || source.width;
+      const sh = source.videoHeight || source.naturalHeight || source.height;
+      if (!sw || !sh) return;
+
+      const scale = Math.max(width / sw, height / sh);
+      const dw = sw * scale;
+      const dh = sh * scale;
+      const dx = (width - dw) / 2;
+      const dy = (height - dh) / 2;
+      ctx.drawImage(source, dx, dy, dw, dh);
+    }
+
+    function resizeAmbientCanvas() {
+      const w = Math.max(160, Math.min(480, Math.round(appShell.clientWidth * .75)));
+      const h = Math.max(240, Math.min(720, Math.round(appShell.clientHeight * .75)));
+      if (bgCanvas.width !== w || bgCanvas.height !== h) {
+        bgCanvas.width = w;
+        bgCanvas.height = h;
       }
     }
 
-    lsVideo.addEventListener('timeupdate', () => {
-      if (!lsVideo.duration) return;
-      const progress = (lsVideo.currentTime / lsVideo.duration) * 100;
-      lsFill.style.width = progress + '%';
-      lsCurrentTime.textContent = formatTime(lsVideo.currentTime);
-      lsDuration.textContent = formatTime(lsVideo.duration);
-    });
+    function clearAmbientCanvas() {
+      cancelAnimationFrame(ambientRaf);
+      ambientRaf = 0;
+      activeAmbientSource = null;
+      bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+    }
 
-    lsVideo.addEventListener('loadedmetadata', () => {
-      lsDuration.textContent = formatTime(lsVideo.duration);
-    });
+    function stopAmbient() {
+      clearAmbientCanvas();
+    }
 
-    lsTrack.addEventListener('click', (e) => {
-      const rect = lsTrack.getBoundingClientRect();
-      const pos = (e.clientX - rect.left) / rect.width;
-      if (lsVideo.duration) {
-        lsVideo.currentTime = pos * lsVideo.duration;
-      }
-    });
+    function scheduleAmbient(item) {
+      if (!appShell.classList.contains('theme-blurred') || !item || item !== currentActiveFeedItem) return;
 
-    lsVideo.addEventListener('click', () => {
-      if (lsVideo.paused) {
-        lsVideo.play();
+      const data = mediaList.find(m => m.id === Number(item.dataset.id));
+      if (!data) return;
+
+      const source = item.querySelector('video, img, .audio-cover');
+      if (!source) return;
+
+      activeAmbientSource = source;
+      resizeAmbientCanvas();
+
+      if (source.tagName === 'VIDEO') {
+        if (!ambientRaf) ambientLastDraw = 0;
+        cancelAnimationFrame(ambientRaf);
+        const loop = ts => {
+          ambientRaf = requestAnimationFrame(loop);
+          if (!activeAmbientSource || activeAmbientSource !== source || item !== currentActiveFeedItem || !appShell.classList.contains('theme-blurred')) {
+            cancelAnimationFrame(ambientRaf);
+            ambientRaf = 0;
+            return;
+          }
+          if (ts - ambientLastDraw < 110) return;
+          ambientLastDraw = ts;
+          if (source.readyState >= 2) {
+            bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+            drawCover(bgCtx, source, bgCanvas.width, bgCanvas.height);
+          }
+        };
+        ambientRaf = requestAnimationFrame(loop);
       } else {
-        lsVideo.pause();
+        cancelAnimationFrame(ambientRaf);
+        ambientRaf = 0;
+        if (source.complete && source.naturalWidth) {
+          drawCoverToCanvas(source);
+        } else {
+          source.addEventListener('load', () => {
+            if (item === currentActiveFeedItem && appShell.classList.contains('theme-blurred')) {
+              drawCoverToCanvas(source);
+            }
+          }, { once: true });
+        }
+      }
+    }
+
+    homeView.addEventListener('scroll', () => {
+      // IntersectionObserver owns activation; this only nudges a resize for smoother snaps.
+      if (appShell.classList.contains('theme-blurred')) resizeAmbientCanvas();
+    }, { passive: true });
+
+    window.addEventListener('resize', () => resizeAmbientCanvas());
+
+    fileInput.addEventListener('change', async event => {
+      const rawFiles = Array.from(event.target.files || []);
+      event.target.value = '';
+      if (!rawFiles.length) return;
+
+      const files = rawFiles.filter(file => {
+        const sig = `${file.name}_${file.size}_${file.lastModified}`;
+        if (uploadedSignatures.has(sig)) return false;
+        uploadedSignatures.add(sig);
+        return true;
+      });
+
+      if (!files.length) return;
+
+      uploadLoading.style.display = 'flex';
+      pbar.style.width = '0%';
+
+      try {
+        const total = files.length;
+        for (let i = 0; i < files.length; i++) {
+          await addMedia(files[i]);
+          pbar.style.width = `${Math.round(((i + 1) / total) * 100)}%`;
+        }
+      } finally {
+        setTimeout(() => {
+          uploadLoading.style.display = 'none';
+          pbar.style.width = '0%';
+        }, 180);
+      }
+
+      updateCounts();
+      switchBottomNav('home');
+
+      requestAnimationFrame(() => {
+        if (!currentActiveFeedItem) {
+          const first = [...feedMap.values()][0];
+          if (first) {
+            currentActiveFeedItem = first;
+            activateFeedItem(first, true);
+          }
+        }
+      });
+    });
+
+    async function addMedia(file) {
+      const id = nextId++;
+      const data = {
+        id,
+        file,
+        url: URL.createObjectURL(file),
+        liked: false,
+        type: file.type || '',
+        name: file.name || 'Media Lokal',
+        date: new Date(file.lastModified || Date.now()).toLocaleDateString('id-ID', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        }),
+        size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+        metadata: null,
+        coverUrl: '',
+        thumbUrl: '',
+        artist: '',
+        album: '',
+        title: ''
+      };
+
+      mediaList.push(data);
+      createFeedElement(data);
+      createExploreElement(data);
+    }
+
+    function cleanupMediaUrls() {
+      for (const data of mediaList) {
+        if (data.url) URL.revokeObjectURL(data.url);
+        if (data.thumbUrl) URL.revokeObjectURL(data.thumbUrl);
+        if (data.coverUrl) URL.revokeObjectURL(data.coverUrl);
+      }
+    }
+
+    window.addEventListener('beforeunload', cleanupMediaUrls);
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        stopAllMedia();
+        stopAmbient();
+      } else if (isHomeActive) {
+        const item = getCurrentlyVisibleFeedItem();
+        if (item) activateFeedItem(item, true);
       }
     });
 
-    // Keluar dari landscape dan lanjutkan tepat di titik waktu tersebut
-    document.getElementById('landscape-close').addEventListener('click', () => {
-      if (document.fullscreenElement) {
-        document.exitFullscreen().catch(() => {});
-      }
-      if (screen.orientation && screen.orientation.unlock) {
-        screen.orientation.unlock();
-      }
-      fsLandscape.style.display = 'none';
-      if (activeLandscapeVideo) {
-        activeLandscapeVideo.currentTime = lsVideo.currentTime;
-        activeLandscapeVideo.play().catch(() => {});
-      }
-      lsVideo.pause();
-      lsVideo.src = '';
-    });
-
-    // ============================================================
+    // ------------------------------------------------------------
     // Metadata audio lokal: ID3v2 TIT2/TPE1/TALB/TDRC/APIC
-    // Fokus pada MP3 agar tetap native/offline tanpa library eksternal.
-    // ============================================================
+    // ------------------------------------------------------------
     function decodeText(bytes, encoding) {
       try {
         if (encoding === 1) return new TextDecoder('utf-16').decode(bytes).replace(/\u0000+$/g, '').trim();
@@ -1635,19 +1721,20 @@
 
     function parseAPIC(payload) {
       if (!payload || payload.length < 5) return null;
+
       const encoding = payload[0];
       let p = 1;
 
       const mimeEnd = payload.indexOf(0, p);
       if (mimeEnd < 0) return null;
+
       const mimeRaw = new TextDecoder('iso-8859-1').decode(payload.subarray(p, mimeEnd)).trim();
       const mime = mimeRaw || 'image/jpeg';
       p = mimeEnd + 1;
 
       if (p >= payload.length) return null;
-      p += 1; // picture type
+      p += 1;
 
-      // Description is null-terminated. UTF-16 descriptions use two-byte terminator.
       if (encoding === 1 || encoding === 2) {
         for (; p + 1 < payload.length; p += 2) {
           if (payload[p] === 0 && payload[p + 1] === 0) {
@@ -1667,7 +1754,6 @@
     async function readAudioMetadata(file) {
       if (!file || !/^audio\//i.test(file.type)) return null;
 
-      // ID3 tags live at the start of an MP3. Read only the tag region.
       const head = new Uint8Array(await file.slice(0, 10).arrayBuffer());
       if (head.length < 10 || head[0] !== 0x49 || head[1] !== 0x44 || head[2] !== 0x33) return null;
 
@@ -1675,7 +1761,15 @@
       const tagSize = readSyncSafe(head[6], head[7], head[8], head[9]);
       const tagBytes = new Uint8Array(await file.slice(10, 10 + tagSize).arrayBuffer());
 
-      const meta = { title: '', artist: '', album: '', year: '', genre: '', coverUrl: '' };
+      const meta = {
+        title: '',
+        artist: '',
+        album: '',
+        year: '',
+        genre: '',
+        coverUrl: ''
+      };
+
       let p = 0;
 
       while (p + 10 <= tagBytes.length) {
@@ -1692,14 +1786,15 @@
             (tagBytes[p + 6] << 8) |
             tagBytes[p + 7];
         }
+
         if (frameSize <= 0 || p + 10 + frameSize > tagBytes.length) break;
 
         const payload = tagBytes.subarray(p + 10, p + 10 + frameSize);
 
-        if (['TIT2'].includes(id)) meta.title = parseTextFrame(payload);
-        else if (['TPE1'].includes(id)) meta.artist = parseTextFrame(payload);
-        else if (['TALB'].includes(id)) meta.album = parseTextFrame(payload);
-        else if (['TDRC', 'TYER'].includes(id)) meta.year = parseTextFrame(payload);
+        if (id === 'TIT2') meta.title = parseTextFrame(payload);
+        else if (id === 'TPE1') meta.artist = parseTextFrame(payload);
+        else if (id === 'TALB') meta.album = parseTextFrame(payload);
+        else if (id === 'TDRC' || id === 'TYER') meta.year = parseTextFrame(payload);
         else if (id === 'TCON') meta.genre = parseTextFrame(payload);
         else if (id === 'APIC' && !meta.coverUrl) {
           const cover = parseAPIC(payload);
@@ -1715,86 +1810,7 @@
       return meta;
     }
 
-    // ============================================================
-    // Fullscreen Browser di Profile
-    // ============================================================
-    const btnBrowserFullscreen = document.getElementById('btnBrowserFullscreen');
-    const browserFullscreenLabel = document.getElementById('browserFullscreenLabel');
-    const browserFullscreenStatus = document.getElementById('browserFullscreenStatus');
-    const btnInstallPWA = document.getElementById('btnInstallPWA');
-
-    function isFullscreenSupported() {
-      return !!(document.fullscreenEnabled && document.documentElement.requestFullscreen);
-    }
-
-    function syncFullscreenUi() {
-      const active = !!document.fullscreenElement;
-      browserFullscreenLabel.textContent = active ? 'Keluar Fullscreen Browser' : 'Fullscreen Browser';
-      browserFullscreenStatus.textContent = active
-        ? 'Fullscreen aktif. Tekan tombol yang sama untuk kembali.'
-        : (isFullscreenSupported()
-          ? 'Mode fullscreen browser untuk area aplikasi.'
-          : 'Browser ini tidak menyediakan Fullscreen API. PWA tetap dapat berjalan standalone.');
-    }
-
-    if (btnBrowserFullscreen) {
-      btnBrowserFullscreen.addEventListener('click', async () => {
-        try {
-          if (!isFullscreenSupported()) {
-            browserFullscreenStatus.textContent = 'Fullscreen API tidak didukung pada browser ini.';
-            return;
-          }
-          if (document.fullscreenElement) {
-            await document.exitFullscreen();
-          } else {
-            await document.documentElement.requestFullscreen();
-          }
-        } catch (_) {
-          browserFullscreenStatus.textContent = 'Fullscreen diblokir browser. Coba tekan lagi dari interaksi langsung.';
-        }
-        syncFullscreenUi();
-      });
-    }
-    document.addEventListener('fullscreenchange', syncFullscreenUi);
-    syncFullscreenUi();
-
-    // ============================================================
-    // PWA install prompt
-    // ============================================================
-    let deferredInstallPrompt = null;
-    window.addEventListener('beforeinstallprompt', (event) => {
-      event.preventDefault();
-      deferredInstallPrompt = event;
-      if (btnInstallPWA) btnInstallPWA.style.display = 'flex';
-    });
-
-    if (btnInstallPWA) {
-      btnInstallPWA.addEventListener('click', async () => {
-        if (!deferredInstallPrompt) return;
-        deferredInstallPrompt.prompt();
-        try {
-          await deferredInstallPrompt.userChoice;
-        } catch (_) {}
-        deferredInstallPrompt = null;
-        btnInstallPWA.style.display = 'none';
-      });
-    }
-
-    window.addEventListener('appinstalled', () => {
-      deferredInstallPrompt = null;
-      if (btnInstallPWA) btnInstallPWA.style.display = 'none';
-    });
-
-    // Pulihkan media lokal setelah reload / membuka ulang PWA.
-    loadPersistedMedia();
-
-    // Register service worker untuk PWA.
-    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(() => {});
-      });
-    }
-
+    resizeAmbientCanvas();
   </script>
 </body>
 </html>
