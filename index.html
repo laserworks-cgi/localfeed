@@ -128,7 +128,6 @@
       visibility: visible;
       pointer-events: auto;
     }
-    /* Pastikan touch-action pan-y dan momentum scrolling bekerja lancar di mobile */
     #view-home {
       overflow-y: scroll;
       -webkit-overflow-scrolling: touch;
@@ -281,7 +280,7 @@
       fill: #fe2c55;
     }
 
-    /* Notif Rotate Phone: Ukuran lebih ramping, border tipis (0.5px), putih, fade-in/fade-out 4s */
+    /* Notif Rotate Phone: Ukuran ramping, border 0.5px tipis, putih, auto-dismiss 4 detik */
     .rotate-pill {
       position: absolute;
       bottom: 220px;
@@ -411,7 +410,7 @@
     .grid-overlay {
       position: absolute;
       inset: 0;
-      background: linear-gradient(180deg, rgba(0,0,0,0.1) 40%, rgba(0,0,0,0.85) 100%);
+      background: linear-gradient(180deg, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.85) 100%);
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
@@ -701,6 +700,7 @@
     let activeLandscapeVideo = null;
     let uploadedSignatures = new Set();
     let isHomeActive = true;
+    let currentActiveFeedItem = null; // Menyimpan item aktif myMedia secara konsisten
 
     const homeView = document.getElementById('view-home');
     const exploreGrid = document.getElementById('explore-grid');
@@ -728,6 +728,7 @@
         if (!m) return;
 
         if (e.isIntersecting) {
+          currentActiveFeedItem = item;
           if (isHomeActive && !item.dataset.userPaused) {
             m.play().catch(() => { m.muted = true; m.play(); });
           }
@@ -749,6 +750,7 @@
     }, { root: homeView, threshold: 0.65 });
 
     function updateAmbientBackground(itemEl) {
+      if (!itemEl) return;
       const id = +itemEl.dataset.id;
       const data = mediaList.find(m => m.id === id);
       if (!data) return;
@@ -770,6 +772,9 @@
     }
 
     function getCurrentlyVisibleFeedItem() {
+      if (currentActiveFeedItem && currentActiveFeedItem.style.display !== 'none') {
+        return currentActiveFeedItem;
+      }
       const items = [...homeView.children].filter(el => el.classList.contains('feed-item') && el.style.display !== 'none');
       return items.find(el => {
         const r = el.getBoundingClientRect();
@@ -777,7 +782,7 @@
       }) || items[0];
     }
 
-    // Navigasi menu tab: TIDAK me-reset video (hanya pause lalu resume saat kembali)
+    // Navigasi menu tab bawah: TIDAK me-reset video (hanya pause lalu resume saat kembali)
     function switchBottomNav(name) {
       document.querySelectorAll('.bottom-btn').forEach(b => b.classList.toggle('active', b.dataset.nav === name));
       document.querySelectorAll('.view-page').forEach(p => p.classList.remove('active'));
@@ -804,14 +809,27 @@
       b.addEventListener('click', () => switchBottomNav(b.dataset.nav));
     });
 
-    // Floating header tabs
+    // Floating header tabs (myMedia / Liked)
+    // PERBAIKAN: Tidak scroll ke atas/item awal, hanya filter visibility sehingga posisi video saat ini tetap meneruskan
     document.querySelectorAll('.nav-tab').forEach(t => {
       t.addEventListener('click', () => {
         document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
         t.classList.add('active');
         currentTab = t.dataset.tab;
         filterHomeFeed();
+
+        // Pastikan halaman aktif adalah feed
         switchBottomNav('home');
+
+        // Lanjutkan video pada item yang sedang terlihat tanpa reset timeline
+        const currentItem = getCurrentlyVisibleFeedItem();
+        if (currentItem) {
+          const m = currentItem.querySelector('video, audio');
+          if (m && !currentItem.dataset.userPaused) {
+            m.play().catch(() => {});
+          }
+          updateAmbientBackground(currentItem);
+        }
       });
     });
 
@@ -954,7 +972,6 @@
       const pill = el.querySelector('.rotate-pill');
       const pauseBadge = el.querySelector('.pause-triangle-badge');
 
-      // Notif Rotate Phone menghilang setelah 4 detik & muncul kembali saat aktifitas (klik/sentuh)
       let pillDismissTimer = null;
       function showRotatePillFor4s() {
         if (el.dataset.isLandscape !== 'true') return;
@@ -1022,12 +1039,16 @@
         if (currentTab === 'liked') filterHomeFeed();
       });
 
-      // Deteksi sentuhan / scroll di HP tanpa mengunci scroll native
+      // ========================================================
+      // PERBAIKAN LOGIKA TAP:
+      // - 1 Klik / Tap -> PAUSE / PLAY (memunculkan segitiga fade singkat)
+      // - 2 Klik / Tap Cepat -> LIKE (animasi hati pop-up)
+      // ========================================================
       let touchStartY = 0;
       let touchStartX = 0;
       let isTouchMoved = false;
       let clickTimer = null;
-      let clickCount = 0;
+      let tapCount = 0;
 
       wrapper.addEventListener('touchstart', (e) => {
         if (e.touches.length === 1) {
@@ -1035,7 +1056,6 @@
           touchStartX = e.touches[0].clientX;
           isTouchMoved = false;
         }
-        // Munculkan notif rotate saat aktifitas sentuh
         showRotatePillFor4s();
       }, { passive: true });
 
@@ -1051,40 +1071,43 @@
 
       wrapper.addEventListener('touchend', (e) => {
         if (isTouchMoved) {
-          // Sedang scroll, jangan proses tap pause/like
+          tapCount = 0;
+          clearTimeout(clickTimer);
           return;
         }
-        handleMediaTap(e);
+        handleUnifiedTap(e);
       });
 
-      // Fallback untuk desktop click
+      // Desktop click
       wrapper.addEventListener('click', (e) => {
-        if ('ontouchstart' in window) return; // Prioritaskan touchend jika di layar sentuh
+        if ('ontouchstart' in window) return; // Pada touch screen, touchend yang menangani
         showRotatePillFor4s();
-        handleMediaTap(e);
+        handleUnifiedTap(e);
       });
 
-      function handleMediaTap(e) {
+      function handleUnifiedTap(e) {
         if (e.target === pill || pill.contains(e.target)) return;
-        clickCount++;
+        tapCount++;
 
-        if (clickCount === 1) {
+        if (tapCount === 1) {
           clickTimer = setTimeout(() => {
+            // SINGLE CLICK -> HANYA PAUSE / PLAY
             if (vid) {
               if (vid.paused) {
-                vid.play();
+                vid.play().catch(() => {});
                 el.dataset.userPaused = '';
               } else {
                 vid.pause();
                 el.dataset.userPaused = 'true';
-                triggerPauseTriangle(); // Segitiga tanpa latar muncul lalu fade out
+                triggerPauseTriangle(); // Munculkan segitiga tanpa latar lalu fade out
               }
             }
-            clickCount = 0;
-          }, 240);
-        } else if (clickCount >= 2) {
+            tapCount = 0;
+          }, 260);
+        } else if (tapCount >= 2) {
+          // DOUBLE CLICK -> HANYA LIKE (TIDAK MEM-PAUSE VIDEO)
           clearTimeout(clickTimer);
-          clickCount = 0;
+          tapCount = 0;
           popHeartCenter();
         }
       }
