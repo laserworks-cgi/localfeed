@@ -102,14 +102,65 @@
       pointer-events: auto;
     }
 
+    .top-header-glass {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: calc(52px + env(safe-area-inset-top));
+      padding-top: env(safe-area-inset-top);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 110;
+      pointer-events: none;
+      transition: opacity .15s ease;
+    }
+
+    .nav-top {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      pointer-events: auto;
+    }
+
+    .nav-tab {
+      position: relative;
+      padding: 7px 4px;
+      border: 0;
+      background: none;
+      color: rgba(255,255,255,.68);
+      font-size: 16px;
+      font-weight: 750;
+      text-shadow: 0 1px 4px rgba(0,0,0,.9);
+      cursor: pointer;
+    }
+
+    .nav-tab.active {
+      color: #fe2c55;
+    }
+
+    .nav-tab.active::after {
+      content: '';
+      position: absolute;
+      left: 15%;
+      right: 15%;
+      bottom: 0;
+      height: 3px;
+      border-radius: 2px;
+      background: #fe2c55;
+      box-shadow: 0 0 8px rgba(254,44,85,.55);
+    }
+
     #view-home {
-      overflow-y: auto;
-      scroll-snap-type: y mandatory;
+      overflow-y: hidden;
+      scroll-snap-type: none;
       scroll-padding-top: 0;
-      scroll-padding-bottom: 60px;
-      touch-action: pan-y;
-      overscroll-behavior-y: contain;
-      padding-bottom: 60px;
+      scroll-padding-bottom: 0;
+      touch-action: none;
+      overscroll-behavior: none;
+      padding-bottom: 0;
+      scroll-behavior: smooth;
     }
 
     .feed-item {
@@ -126,7 +177,7 @@
       align-items: center;
       justify-content: center;
       overflow: hidden;
-      touch-action: pan-y;
+      touch-action: none;
       contain: layout paint style;
     }
 
@@ -139,7 +190,7 @@
       justify-content: center;
       overflow: hidden;
       cursor: pointer;
-      touch-action: pan-y;
+      touch-action: none;
     }
 
     .media-placeholder {
@@ -279,6 +330,29 @@
 
     .side-btn.liked svg {
       fill: #fe2c55;
+    }
+
+    .sound-hint {
+      position: absolute;
+      left: 50%;
+      bottom: calc(74px + env(safe-area-inset-bottom));
+      transform: translateX(-50%);
+      z-index: 35;
+      padding: 7px 12px;
+      border-radius: 18px;
+      background: rgba(0,0,0,.62);
+      border: 1px solid rgba(255,255,255,.16);
+      color: rgba(255,255,255,.9);
+      font-size: 11px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .18s ease;
+      white-space: nowrap;
+      backdrop-filter: blur(10px);
+    }
+
+    .feed-item.sound-required .sound-hint {
+      opacity: 1;
     }
 
     .pause-triangle-badge {
@@ -675,6 +749,13 @@
 
     <input type="file" id="fileInput" accept="video/*,audio/*,image/*" multiple hidden>
 
+    <div class="top-header-glass" id="topHeader">
+      <div class="nav-top" role="tablist" aria-label="Feed">
+        <button class="nav-tab active" data-tab="mymedia" type="button">myMedia</button>
+        <button class="nav-tab" data-tab="liked" type="button">Liked</button>
+      </div>
+    </div>
+
     <div class="views-container">
       <div class="view-page active" id="view-home">
         <div class="empty-view" id="empty-home">
@@ -732,7 +813,7 @@
     </div>
 
     <div id="upload-loading">
-      <div style="font-size:13px;font-weight:600">Menyiapkan Media...</div>
+      <div style="font-size:13px;font-weight:600" id="upload-loading-text">Menyiapkan Media...</div>
       <div class="progress-box"><div class="progress-bar" id="pbar"></div></div>
     </div>
   </div>
@@ -749,6 +830,7 @@
     let ambientRaf = 0;
     let ambientLastDraw = 0;
     let activeAmbientSource = null;
+    let currentTab = 'mymedia';
 
     const appShell = document.getElementById('appShell');
     const homeView = document.getElementById('view-home');
@@ -759,6 +841,7 @@
     const fileInput = document.getElementById('fileInput');
     const uploadLoading = document.getElementById('upload-loading');
     const pbar = document.getElementById('pbar');
+    const uploadLoadingText = document.getElementById('upload-loading-text');
     const mediaCountTxt = document.getElementById('media-count-txt');
     const bgCanvas = document.getElementById('bg-blur-canvas');
     const bgCtx = bgCanvas.getContext('2d', { alpha: true });
@@ -793,6 +876,15 @@
 
     document.querySelectorAll('.bottom-btn').forEach(btn => {
       btn.addEventListener('click', () => switchBottomNav(btn.dataset.nav));
+    });
+
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        currentTab = tab.dataset.tab === 'liked' ? 'liked' : 'mymedia';
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t === tab));
+        if (!isHomeActive) switchBottomNav('home');
+        filterHomeFeed();
+      });
     });
 
     document.querySelectorAll('.theme-btn').forEach(btn => {
@@ -847,16 +939,29 @@
     }
 
     async function playOnly(media, item) {
-      if (!media || !item || !isHomeActive || item !== currentActiveFeedItem) return;
+      if (!media || !item || !isHomeActive || item !== currentActiveFeedItem) return false;
 
       stopAllMedia(media);
+      media.volume = 1;
 
+      // Coba autoplay dengan suara. Browser dapat menolak ini tanpa gesture pengguna.
+      media.muted = false;
       try {
         await media.play();
+        media.dataset.autoplayMuted = 'false';
+        item.classList.remove('sound-required');
+        return true;
       } catch (_) {
-        if (media instanceof HTMLVideoElement || media instanceof HTMLAudioElement) {
-          media.muted = true;
-          try { await media.play(); } catch (_) {}
+        // Fallback hanya untuk autoplay: tetap berjalan muted. Gesture pertama
+        // pada feed akan langsung mencoba membuka suara kembali.
+        media.muted = true;
+        media.dataset.autoplayMuted = 'true';
+        item.classList.add('sound-required');
+        try {
+          await media.play();
+          return true;
+        } catch (_) {
+          return false;
         }
       }
     }
@@ -900,8 +1005,10 @@
         media.loop = true;
         media.playsInline = true;
         media.preload = 'metadata';
-        media.muted = true;
+        media.muted = false;
+        media.volume = 1;
         media.controls = false;
+        media.setAttribute('playsinline', '');
 
         media.addEventListener('loadedmetadata', () => {
           item.querySelector('.res').textContent = `${media.videoWidth}x${media.videoHeight}`;
@@ -958,7 +1065,8 @@
         media.src = data.url;
         media.loop = true;
         media.preload = 'metadata';
-        media.muted = true;
+        media.muted = false;
+        media.volume = 1;
         media.style.display = 'none';
 
         media.addEventListener('loadedmetadata', () => {
@@ -967,7 +1075,7 @@
 
         host.appendChild(media);
 
-        readAudioMetadata(data.file).then(meta => {
+        const applyAudioMeta = (meta) => {
           if (!meta || !item.isConnected) return;
           data.metadata = meta;
           data.artist = meta.artist || '';
@@ -990,7 +1098,10 @@
             scheduleAmbient(item);
             prepareAudioThumb(data, meta.coverUrl);
           }
-        }).catch(() => {});
+        };
+
+        if (data.metadata) applyAudioMeta(data.metadata);
+        else readAudioMetadata(data.file).then(applyAudioMeta).catch(() => {});
       }
 
       return media;
@@ -1031,20 +1142,175 @@
     }
 
     const feedObserver = new IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        const item = entry.target;
-        if (entry.isIntersecting && entry.intersectionRatio >= .65) {
-          if (!isHomeActive) return;
-          activateFeedItem(item, true);
-          showRotatePill(item);
-        } else if (entry.intersectionRatio < .2) {
-          if (item !== currentActiveFeedItem || !isHomeActive) deactivateFeedItem(item);
+      // IntersectionObserver hanya menentukan item aktif; perpindahan halaman
+      // dikendalikan satu kali oleh pager manual di bawah agar tidak lompat 2 item.
+      let best = null;
+      let bestRatio = 0;
+      for (const entry of entries) {
+        const ratio = entry.intersectionRatio || 0;
+        if (ratio > bestRatio) {
+          bestRatio = ratio;
+          best = entry.target;
         }
-      });
+      }
+      if (best && bestRatio >= .65 && isHomeActive && best.style.display !== 'none') {
+        activateFeedItem(best, true);
+        showRotatePill(best);
+      }
+
+      for (const entry of entries) {
+        if (entry.intersectionRatio < .2 && entry.target !== currentActiveFeedItem) {
+          deactivateFeedItem(entry.target);
+        }
+      }
     }, {
       root: homeView,
-      threshold: [0, .2, .65, 1]
+      threshold: [0, .2, .65, .9, 1]
     });
+
+    let pagerPointerId = null;
+    let pagerStartY = 0;
+    let pagerStartX = 0;
+    let pagerStartTime = 0;
+    let pagerBusy = false;
+    let pagerWheelLock = 0;
+
+    function getVisibleFeedItems() {
+      // Selalu gunakan urutan mediaList yang sudah di-sort berdasarkan metadata file.
+      return mediaList
+        .map(data => feedMap.get(data.id))
+        .filter(item => item && item.isConnected && item.style.display !== 'none');
+    }
+
+    function goToAdjacentFeed(direction) {
+      if (!isHomeActive || pagerBusy) return;
+      const items = getVisibleFeedItems();
+      if (!items.length) return;
+
+      let current = currentActiveFeedItem;
+      if (!current || current.style.display === 'none') current = getCurrentlyVisibleFeedItem();
+      let index = current ? items.indexOf(current) : 0;
+      if (index < 0) index = 0;
+
+      const nextIndex = Math.max(0, Math.min(items.length - 1, index + direction));
+      if (nextIndex === index) {
+        if (current) homeView.scrollTo({ top: current.offsetTop, behavior: 'smooth' });
+        return;
+      }
+
+      const next = items[nextIndex];
+      pagerBusy = true;
+      currentActiveFeedItem = next;
+      clearFeedRotation();
+      stopAllMedia();
+      homeView.scrollTo({ top: next.offsetTop, behavior: 'smooth' });
+      window.setTimeout(() => {
+        pagerBusy = false;
+        if (isHomeActive && currentActiveFeedItem === next) activateFeedItem(next, true);
+      }, 520);
+    }
+
+    homeView.addEventListener('pointerdown', event => {
+      if (event.pointerType !== 'touch' && event.pointerType !== 'pen') return;
+      if (pagerBusy) return;
+      pagerPointerId = event.pointerId;
+      pagerStartY = event.clientY;
+      pagerStartX = event.clientX;
+      pagerStartTime = performance.now();
+    }, { passive: true });
+
+    homeView.addEventListener('pointerup', event => {
+      if (event.pointerId !== pagerPointerId || pagerBusy) return;
+      pagerPointerId = null;
+      const dy = event.clientY - pagerStartY;
+      const dx = event.clientX - pagerStartX;
+      const elapsed = performance.now() - pagerStartTime;
+      if (Math.abs(dy) < 45 || Math.abs(dy) < Math.abs(dx) * 1.15) return;
+      if (elapsed > 900) return;
+      goToAdjacentFeed(dy < 0 ? 1 : -1);
+    }, { passive: true });
+
+    homeView.addEventListener('pointercancel', () => {
+      pagerPointerId = null;
+    }, { passive: true });
+
+    homeView.addEventListener('wheel', event => {
+      if (!isHomeActive || pagerBusy) {
+        event.preventDefault();
+        return;
+      }
+      event.preventDefault();
+      const now = performance.now();
+      if (now < pagerWheelLock) return;
+      const delta = Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : 0;
+      if (!delta || Math.abs(delta) < 8) return;
+      pagerWheelLock = now + 520;
+      goToAdjacentFeed(delta > 0 ? 1 : -1);
+    }, { passive: false });
+
+    function filterHomeFeed() {
+      let visibleCount = 0;
+      for (const data of mediaList) {
+        const item = feedMap.get(data.id);
+        if (!item) continue;
+        const visible = currentTab === 'mymedia' || data.liked === true;
+        item.style.display = visible ? 'flex' : 'none';
+        if (visible) visibleCount++;
+      }
+
+      emptyHome.style.display = visibleCount ? 'none' : 'flex';
+
+      if (currentActiveFeedItem && currentActiveFeedItem.style.display === 'none') {
+        stopAllMedia();
+        const next = mediaList.map(d => feedMap.get(d.id)).find(item => item && item.style.display !== 'none');
+        currentActiveFeedItem = next || null;
+        if (next && isHomeActive) {
+          pagerBusy = true;
+          requestAnimationFrame(() => {
+            homeView.scrollTo({ top: next.offsetTop, behavior: 'auto' });
+            activateFeedItem(next, true);
+            window.setTimeout(() => { pagerBusy = false; }, 120);
+          });
+        }
+      }
+    }
+
+    function getSortTime(data) {
+      const fromFile = Number(data.file?.lastModified || data.lastModified || 0);
+      const fromMeta = Number(data.metadata?.timestamp || 0);
+      return fromFile || fromMeta || 0;
+    }
+
+    function sortMediaByMetadata() {
+      const currentId = currentActiveFeedItem ? Number(currentActiveFeedItem.dataset.id) : null;
+      mediaList.sort((a, b) => {
+        const delta = getSortTime(b) - getSortTime(a);
+        return delta || (Number(a.id) - Number(b.id));
+      });
+
+      const feedFrag = document.createDocumentFragment();
+      for (const data of mediaList) {
+        const item = feedMap.get(data.id);
+        if (item) feedFrag.appendChild(item);
+      }
+      homeView.appendChild(feedFrag);
+
+      const exploreFrag = document.createDocumentFragment();
+      for (const data of mediaList) {
+        const card = exploreMap.get(data.id);
+        if (card) exploreFrag.appendChild(card);
+      }
+      exploreGrid.appendChild(exploreFrag);
+      filterHomeFeed();
+
+      if (currentId != null) {
+        const active = feedMap.get(currentId);
+        if (active && active.style.display !== 'none') {
+          currentActiveFeedItem = active;
+          requestAnimationFrame(() => homeView.scrollTo({ top: active.offsetTop, behavior: 'auto' }));
+        }
+      }
+    }
 
     function createFeedElement(data) {
       const item = document.createElement('div');
@@ -1072,7 +1338,11 @@
       rotateText.textContent = 'Rotate';
       rotatePill.appendChild(rotateText);
 
-      wrapper.append(host, pauseBadge, rotatePill);
+      const soundHint = document.createElement('div');
+      soundHint.className = 'sound-hint';
+      soundHint.textContent = 'Tap untuk menyalakan suara';
+
+      wrapper.append(host, pauseBadge, rotatePill, soundHint);
 
       const info = document.createElement('div');
       info.className = 'overlay-info';
@@ -1113,6 +1383,7 @@
 
       sidebar.appendChild(likeBtn);
       item.append(wrapper, info, sidebar);
+      likeBtn.classList.toggle('liked', !!data.liked);
 
       const showRotatePill = () => {
         if (item.dataset.isLandscape !== 'true' || !isHomeActive) return;
@@ -1159,6 +1430,7 @@
         event.stopPropagation();
         data.liked = !data.liked;
         likeBtn.classList.toggle('liked', data.liked);
+        if (currentTab === 'liked') filterHomeFeed();
       });
 
       let pointerDownX = 0;
@@ -1183,18 +1455,37 @@
       wrapper.addEventListener('pointerup', event => {
         if (pointerMoved || event.target === rotatePill || rotatePill.contains(event.target)) return;
 
+        const media = item.querySelector('video, audio');
+        if (!media) return;
+
         tapCount++;
         if (tapCount === 1) {
           window.clearTimeout(tapTimer);
+
+          // Aktifkan audio di dalam gesture pointer asli. Menunggu 250ms
+          // di sini dapat membuat browser mencabut user activation.
+          const wasMuted = media.muted;
+          const wasPaused = media.paused;
+          if (wasMuted) {
+            media.muted = false;
+            media.volume = 1;
+            const soundAttempt = media.play();
+            soundAttempt.catch(() => {
+              media.muted = true;
+              item.classList.add('sound-required');
+            });
+          }
+
           tapTimer = window.setTimeout(() => {
             tapCount = 0;
-            const media = item.querySelector('video, audio');
-            if (!media) return;
-
-            if (media.paused) {
+            if (wasPaused) {
               item.dataset.userPaused = '';
-              playOnly(media, item);
-            } else {
+              if (media.paused) playOnly(media, item);
+            } else if (wasMuted) {
+              // Tap pertama membuka suara untuk media autoplay-muted.
+              item.dataset.userPaused = '';
+              if (!media.muted) item.classList.remove('sound-required');
+            } else if (!media.paused) {
               media.pause();
               item.dataset.userPaused = 'true';
               triggerPauseTriangle();
@@ -1482,6 +1773,9 @@
       card.append(holder, overlay);
 
       card.addEventListener('click', () => {
+        currentTab = 'mymedia';
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'mymedia'));
+        filterHomeFeed();
         switchBottomNav('home');
         const target = feedMap.get(data.id);
         if (target) {
@@ -1598,7 +1892,6 @@
     }
 
     homeView.addEventListener('scroll', () => {
-      // IntersectionObserver owns activation; this only nudges a resize for smoother snaps.
       if (appShell.classList.contains('theme-blurred')) resizeAmbientCanvas();
     }, { passive: true });
 
@@ -1624,9 +1917,12 @@
       try {
         const total = files.length;
         for (let i = 0; i < files.length; i++) {
+          uploadLoadingText.textContent = `Merender media ${i + 1} dari ${total}...`;
           await addMedia(files[i]);
           pbar.style.width = `${Math.round(((i + 1) / total) * 100)}%`;
         }
+        uploadLoadingText.textContent = `Merapikan urutan ${mediaList.length} media...`;
+        sortMediaByMetadata();
       } finally {
         setTimeout(() => {
           uploadLoading.style.display = 'none';
@@ -1639,7 +1935,7 @@
 
       requestAnimationFrame(() => {
         if (!currentActiveFeedItem) {
-          const first = [...feedMap.values()][0];
+          const first = mediaList.map(data => feedMap.get(data.id)).find(Boolean);
           if (first) {
             currentActiveFeedItem = first;
             activateFeedItem(first, true);
@@ -1650,6 +1946,7 @@
 
     async function addMedia(file) {
       const id = nextId++;
+      const fileTime = Number(file.lastModified || 0);
       const data = {
         id,
         file,
@@ -1657,10 +1954,10 @@
         liked: false,
         type: file.type || '',
         name: file.name || 'Media Lokal',
-        date: new Date(file.lastModified || Date.now()).toLocaleDateString('id-ID', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric'
+        lastModified: fileTime,
+        sortTime: fileTime,
+        date: new Date(fileTime || Date.now()).toLocaleDateString('id-ID', {
+          day: '2-digit', month: 'short', year: 'numeric'
         }),
         size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
         metadata: null,
@@ -1670,6 +1967,19 @@
         album: '',
         title: ''
       };
+
+      if (/^audio\//i.test(file.type)) {
+        try {
+          const meta = await readAudioMetadata(file);
+          if (meta) {
+            data.metadata = meta;
+            data.artist = meta.artist || '';
+            data.album = meta.album || '';
+            data.title = meta.title || '';
+            if (meta.coverUrl) data.coverUrl = meta.coverUrl;
+          }
+        } catch (_) {}
+      }
 
       mediaList.push(data);
       createFeedElement(data);
@@ -1811,6 +2121,7 @@
     }
 
     resizeAmbientCanvas();
+    updateCounts();
   </script>
 </body>
 </html>
