@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+  <title>Lokal Media Feed</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    body {
+      background: #000;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+    }
+    .app-shell {
+      width: 100%;
+      max-width: 480px;
+      height: 100vh;
+      position: relative;
+      background: #000;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    #bg-blur-ambient {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      filter: blur(30px) brightness(.5);
+      transform: scale(1.2);
+      opacity: 0;
+      transition: opacity .2s ease;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .app-shell.theme-blurred #bg-blur-ambient {
+      opacity: 1;
+    }
+    .app-shell.theme-blurred .bottom-nav {
+      background: rgba(0, 0, 0, .45) !important;
+      backdrop-filter: blur(20px);
+    }
+    
+    /* Floating Header Menu: Tanpa latar & tab aktif warna merah */
+    .top-header-glass {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: transparent !important;
+      backdrop-filter: none !important;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 52px;
+      pointer-events: none;
+    }
+    .nav-top {
+      display: flex;
+      gap: 32px;
+      pointer-events: auto;
+    }
+    .nav-tab {
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      position: relative;
+      padding: 6px 4px;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+      transition: color 0.15s ease;
+    }
+    .nav-tab.active {
+      color: #fe2c55 !important;
+    }
+    .nav-tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 15%;
+      width: 70%;
+      height: 3px;
+      background: #fe2c55;
+      border-radius: 2px;
+      box-shadow: 0 0 8px rgba(254, 44, 85, 0.6);
+    }
+
+    .views-container {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
+    }
+    .view-page {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .view-page::-webkit-scrollbar {
+      display: none;
+    }
+    .view-page.active {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+    /* Pastikan touch-action pan-y dan momentum scrolling bekerja lancar di mobile */
+    #view-home {
+      overflow-y: scroll;
+      -webkit-overflow-scrolling: touch;
+      scroll-snap-type: y mandatory;
+      touch-action: pan-y;
+      height: 100%;
+    }
+    .feed-item {
+      width: 100%;
+      height: 100%;
+      min-height: 100vh;
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+      position: relative;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      touch-action: pan-y;
+    }
+    .media-wrapper {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      cursor: pointer;
+      touch-action: pan-y;
+    }
+    .media-content {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+    }
+    .audio-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .audio-box svg {
+      width: 64px;
+      height: 64px;
+      fill: #fff;
+      opacity: .8;
+    }
+
+    /* Ikon pause: segitiga murni tanpa latar, fade singkat lalu fade out */
+    .pause-triangle-badge {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      background: none !important;
+      border: none !important;
+      box-shadow: none !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 45;
+    }
+    .pause-triangle-badge svg {
+      width: 58px;
+      height: 58px;
+      fill: #ffffff;
+      filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.75));
+    }
+    .pause-triangle-badge.animate-triangle {
+      animation: triangleFade 0.32s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+    }
+    @keyframes triangleFade {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.7);
+      }
+      35% {
+        opacity: 0.95;
+        transform: translate(-50%, -50%) scale(1.1);
+      }
+      65% {
+        opacity: 0.85;
+        transform: translate(-50%, -50%) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(1.15);
+      }
+    }
+
+    .overlay-info {
+      position: absolute;
+      bottom: 76px;
+      left: 16px;
+      right: 70px;
+      z-index: 20;
+      pointer-events: none;
+      text-shadow: 0 1px 4px rgba(0,0,0,.9);
+    }
+    .meta-user {
+      font-weight: 700;
+      font-size: 15px;
+      margin-bottom: 4px;
+    }
+    .meta-desc {
+      font-size: 13px;
+      margin-bottom: 6px;
+      word-break: break-all;
+    }
+    .meta-tags {
+      font-size: 11px;
+      opacity: .85;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .sidebar {
+      position: absolute;
+      right: 12px;
+      bottom: 90px;
+      z-index: 25;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      align-items: center;
+    }
+    .side-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 11px;
+    }
+    .side-btn svg {
+      width: 28px;
+      height: 28px;
+      fill: #fff;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,.8));
+      transition: transform .1s;
+    }
+    .side-btn.liked svg {
+      fill: #fe2c55;
+    }
+
+    /* Notif Rotate Phone: Ukuran lebih ramping, border tipis (0.5px), putih, fade-in/fade-out 4s */
+    .rotate-pill {
+      position: absolute;
+      bottom: 220px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 40;
+      background: rgba(20, 20, 20, 0.82);
+      border: 0.5px solid rgba(255, 255, 255, 0.35);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.65);
+      touch-action: auto;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      transform: translate(-50%, 6px);
+    }
+    .rotate-pill.visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-50%, 0);
+    }
+    .rotate-pill svg {
+      width: 15px;
+      height: 15px;
+      fill: #ffffff;
+    }
+    .rotate-pill span {
+      font-size: 11px;
+      font-weight: 500;
+      color: #ffffff;
+      white-space: nowrap;
+      letter-spacing: 0.2px;
+    }
+
+    /* Animasi Like (Double Tap): Cepat (0.42s) */
+    .heart-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 90px;
+      height: 90px;
+      fill: #fe2c55;
+      pointer-events: none;
+      transform: translate(-50%,-50%) scale(0);
+      animation: heartPopFast 0.42s cubic-bezier(.17,.89,.32,1.28) forwards;
+      z-index: 50;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,.6));
+    }
+    @keyframes heartPopFast {
+      0% { transform: translate(-50%,-50%) scale(0); opacity: 0; }
+      45% { transform: translate(-50%,-50%) scale(1.22); opacity: 1; }
+      100% { transform: translate(-50%,-65%) scale(1.05); opacity: 0; }
+    }
+
+    .bottom-nav {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: rgba(0,0,0,.85);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid rgba(255,255,255,.1);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 100;
+    }
+    .bottom-btn {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,.6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      cursor: pointer;
+      flex: 1;
+    }
+    .bottom-btn.active {
+      color: #fff;
+    }
+    .bottom-btn svg {
+      width: 22px;
+      height: 22px;
+      fill: currentColor;
+    }
+    .empty-view {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: #777;
+      font-size: 14px;
+      padding: 24px;
+      text-align: center;
+    }
+
+    /* Eksplor Thumbnail Grid dengan Overlay Nama dan Tanggal */
+    .grid-view {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3px;
+      padding: 60px 3px 70px 3px;
+    }
+    .grid-item {
+      aspect-ratio: 9/16;
+      background: #181818;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .grid-thumb {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .grid-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,0.1) 40%, rgba(0,0,0,0.85) 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 6px;
+      pointer-events: none;
+    }
+    .grid-item-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #fff;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-bottom: 2px;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+    }
+    .grid-item-date {
+      font-size: 9px;
+      color: rgba(255, 255, 255, 0.75);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.9);
+    }
+
+    /* Fullscreen Landscape Mode & Bar Timestamp */
+    #fullscreen-landscape {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 999;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    #fullscreen-landscape video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    #landscape-close {
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      background: rgba(0,0,0,.65);
+      border: 1px solid rgba(255,255,255,.3);
+      color: #fff;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 20px;
+      cursor: pointer;
+      z-index: 1002;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(8px);
+    }
+    
+    .landscape-timeline-bar {
+      position: absolute;
+      bottom: 24px;
+      left: 24px;
+      right: 24px;
+      z-index: 1002;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(10px);
+      padding: 8px 16px;
+      border-radius: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .landscape-time-text {
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.85);
+      white-space: nowrap;
+    }
+    .landscape-slider-track {
+      flex: 1;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.25);
+      border-radius: 3px;
+      position: relative;
+      cursor: pointer;
+    }
+    .landscape-slider-fill {
+      height: 100%;
+      width: 0%;
+      background: #fe2c55;
+      border-radius: 3px;
+      pointer-events: none;
+    }
+
+    .profile-card {
+      padding: 70px 20px 80px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .profile-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .profile-avatar {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 24px;
+    }
+    .profile-btn-upload {
+      background: #fe2c55;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-weight: 700;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(254,44,85,.3);
+    }
+    .profile-section {
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .section-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: rgba(255,255,255,.8);
+    }
+    .theme-options {
+      display: flex;
+      gap: 10px;
+    }
+    .theme-btn {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,.2);
+      background: transparent;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .theme-btn.active {
+      background: #fff;
+      color: #000;
+      border-color: #fff;
+    }
+    #upload-loading {
+      position: absolute;
+      inset: 0;
+      z-index: 500;
+      background: rgba(0,0,0,.6);
+      backdrop-filter: blur(16px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+    }
+    .progress-box {
+      width: 200px;
+      height: 6px;
+      background: rgba(255,255,255,.2);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      width: 0;
+      background: #fe2c55;
+      transition: width .1s linear;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell" id="appShell">
+    <div id="bg-blur-ambient"></div>
+
+    <!-- Floating Top Menu (Tanpa Latar, Tombol Aktif Merah) -->
+    <div class="top-header-glass">
+      <div class="nav-top">
+        <button class="nav-tab active" data-tab="mymedia">myMedia</button>
+        <button class="nav-tab" data-tab="liked">Liked</button>
+      </div>
+    </div>
+
+    <input type="file" id="fileInput" accept="video/*,audio/*,image/*" multiple style="display:none">
+
+    <div class="views-container">
+      <div class="view-page active" id="view-home">
+        <div class="empty-view" id="empty-home">
+          Belum ada media diunggah.<br>Buka menu Profile untuk menambah file.
+        </div>
+      </div>
+      <div class="view-page" id="view-search">
+        <div class="empty-view">Pencarian Media Lokal</div>
+      </div>
+      <div class="view-page" id="view-explore">
+        <div class="grid-view" id="explore-grid"></div>
+        <div class="empty-view" id="empty-explore">Belum ada thumbnail media.</div>
+      </div>
+      <div class="view-page" id="view-profile">
+        <div class="profile-card">
+          <div class="profile-header">
+            <div class="profile-avatar">M</div>
+            <div>
+              <div style="font-weight:700;font-size:18px">@lokal.user</div>
+              <div style="font-size:12px;color:#888" id="media-count-txt">0 Media dimuat</div>
+            </div>
+          </div>
+          <button class="profile-btn-upload" onclick="document.getElementById('fileInput').click()">
+            <svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:currentColor">
+              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+            </svg> Tambah Media Lokal
+          </button>
+          <div class="profile-section">
+            <div class="section-title">Latar Menu</div>
+            <div class="theme-options">
+              <button class="theme-btn active" data-theme="default">Default</button>
+              <button class="theme-btn" data-theme="blurred">Blurred Konten</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav" id="bottomNav">
+      <button class="bottom-btn active" data-nav="home">
+        <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        <span>Home</span>
+      </button>
+      <button class="bottom-btn" data-nav="search">
+        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <span>Search</span>
+      </button>
+      <button class="bottom-btn" data-nav="explore">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+        <span>Explore</span>
+      </button>
+      <button class="bottom-btn" data-nav="profile">
+        <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        <span>Profile</span>
+      </button>
+    </div>
+
+    <!-- Upload Indicator -->
+    <div id="upload-loading">
+      <div style="font-size:13px;font-weight:600">Memproses Media...</div>
+      <div class="progress-box"><div class="progress-bar" id="pbar"></div></div>
+    </div>
+  </div>
+
+  <!-- Dedicated Landscape Fullscreen View -->
+  <div id="fullscreen-landscape">
+    <button id="landscape-close" title="Kembali">✕</button>
+    <video id="landscape-video" playsinline></video>
+    <div class="landscape-timeline-bar" id="lsTimeline">
+      <span class="landscape-time-text" id="lsCurrentTime">00:00</span>
+      <div class="landscape-slider-track" id="lsTrack">
+        <div class="landscape-slider-fill" id="lsFill"></div>
+      </div>
+      <span class="landscape-time-text" id="lsDuration">00:00</span>
+    </div>
+  </div>
+
+  <script>
+    let mediaList = [];
+    let currentTab = 'mymedia';
+    let activeLandscapeVideo = null;
+    let uploadedSignatures = new Set();
+    let isHomeActive = true;
+
+    const homeView = document.getElementById('view-home');
+    const exploreGrid = document.getElementById('explore-grid');
+    const emptyHome = document.getElementById('empty-home');
+    const emptyExplore = document.getElementById('empty-explore');
+    const fsLandscape = document.getElementById('fullscreen-landscape');
+    const lsVideo = document.getElementById('landscape-video');
+    const lsTrack = document.getElementById('lsTrack');
+    const lsFill = document.getElementById('lsFill');
+    const lsCurrentTime = document.getElementById('lsCurrentTime');
+    const lsDuration = document.getElementById('lsDuration');
+    const bgBlur = document.getElementById('bg-blur-ambient');
+    const appShell = document.getElementById('appShell');
+    const uploadLoading = document.getElementById('upload-loading');
+    const pbar = document.getElementById('pbar');
+    const mediaCountTxt = document.getElementById('media-count-txt');
+
+    document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
+
+    // IntersectionObserver: HANYA reset video saat scroll berpindah konten feed
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        const item = e.target;
+        const m = item.querySelector('video, audio');
+        if (!m) return;
+
+        if (e.isIntersecting) {
+          if (isHomeActive && !item.dataset.userPaused) {
+            m.play().catch(() => { m.muted = true; m.play(); });
+          }
+          updateAmbientBackground(item);
+
+          if (item.dataset.isLandscape === 'true' && item.triggerRotatePill) {
+            item.triggerRotatePill();
+          }
+        } else {
+          // Ketika item keluar dari viewport KARENA SCROLL KE KONTEN LAIN:
+          m.pause();
+          m.currentTime = 0; // Mengulang hanya saat scroll ke konten lain
+          item.dataset.userPaused = '';
+          if (item.hideRotatePill) {
+            item.hideRotatePill();
+          }
+        }
+      });
+    }, { root: homeView, threshold: 0.65 });
+
+    function updateAmbientBackground(itemEl) {
+      const id = +itemEl.dataset.id;
+      const data = mediaList.find(m => m.id === id);
+      if (!data) return;
+      if (data.type.startsWith('image/')) {
+        bgBlur.style.backgroundImage = `url('${data.url}')`;
+      } else if (data.type.startsWith('video/')) {
+        const v = itemEl.querySelector('video');
+        if (v) {
+          const c = document.createElement('canvas');
+          c.width = 160; c.height = 90;
+          try {
+            c.getContext('2d').drawImage(v, 0, 0, 160, 90);
+            bgBlur.style.backgroundImage = `url('${c.toDataURL()}')`;
+          } catch (_) {}
+        }
+      } else {
+        bgBlur.style.backgroundImage = 'none';
+      }
+    }
+
+    function getCurrentlyVisibleFeedItem() {
+      const items = [...homeView.children].filter(el => el.classList.contains('feed-item') && el.style.display !== 'none');
+      return items.find(el => {
+        const r = el.getBoundingClientRect();
+        return r.top >= -80 && r.bottom <= window.innerHeight + 80;
+      }) || items[0];
+    }
+
+    // Navigasi menu tab: TIDAK me-reset video (hanya pause lalu resume saat kembali)
+    function switchBottomNav(name) {
+      document.querySelectorAll('.bottom-btn').forEach(b => b.classList.toggle('active', b.dataset.nav === name));
+      document.querySelectorAll('.view-page').forEach(p => p.classList.remove('active'));
+      const target = document.getElementById('view-' + name);
+      if (target) target.classList.add('active');
+
+      if (name !== 'home') {
+        isHomeActive = false;
+        homeView.querySelectorAll('video, audio').forEach(m => m.pause());
+      } else {
+        isHomeActive = true;
+        const currentItem = getCurrentlyVisibleFeedItem();
+        if (currentItem) {
+          const m = currentItem.querySelector('video, audio');
+          if (m && !currentItem.dataset.userPaused) {
+            m.play().catch(() => {});
+          }
+          updateAmbientBackground(currentItem);
+        }
+      }
+    }
+
+    document.querySelectorAll('.bottom-btn').forEach(b => {
+      b.addEventListener('click', () => switchBottomNav(b.dataset.nav));
+    });
+
+    // Floating header tabs
+    document.querySelectorAll('.nav-tab').forEach(t => {
+      t.addEventListener('click', () => {
+        document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+        t.classList.add('active');
+        currentTab = t.dataset.tab;
+        filterHomeFeed();
+        switchBottomNav('home');
+      });
+    });
+
+    document.querySelectorAll('.theme-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        document.querySelectorAll('.theme-btn').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        appShell.classList.toggle('theme-blurred', b.dataset.theme === 'blurred');
+      });
+    });
+
+    function filterHomeFeed() {
+      let visibleCount = 0;
+      document.querySelectorAll('.feed-item').forEach(item => {
+        const id = +item.dataset.id;
+        const data = mediaList.find(m => m.id === id);
+        const show = (currentTab === 'mymedia') || (currentTab === 'liked' && data && data.liked);
+        item.style.display = show ? 'flex' : 'none';
+        if (show) visibleCount++;
+      });
+      emptyHome.style.display = visibleCount === 0 ? 'flex' : 'none';
+    }
+
+    // Input Media Lokal
+    document.getElementById('fileInput').addEventListener('change', e => {
+      const rawFiles = Array.from(e.target.files);
+      if (!rawFiles.length) return;
+      const files = rawFiles.filter(f => {
+        const sig = `${f.name}_${f.size}_${f.lastModified}`;
+        if (uploadedSignatures.has(sig)) return false;
+        uploadedSignatures.add(sig);
+        return true;
+      });
+      if (!files.length) { e.target.value = ''; return; }
+
+      uploadLoading.style.display = 'flex';
+      pbar.style.width = '0%';
+      let progress = 0;
+      const timer = setInterval(() => {
+        progress += 25;
+        pbar.style.width = progress + '%';
+        if (progress >= 100) {
+          clearInterval(timer);
+          setTimeout(() => {
+            uploadLoading.style.display = 'none';
+            files.forEach(f => {
+              const id = Date.now() + Math.random();
+              const url = URL.createObjectURL(f);
+              const dateObj = new Date(f.lastModified || Date.now());
+              const dateStr = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+              const item = {
+                id,
+                file: f,
+                url,
+                liked: false,
+                type: f.type,
+                name: f.name,
+                date: dateStr,
+                size: (f.size / (1024 * 1024)).toFixed(2) + ' MB'
+              };
+              mediaList.push(item);
+              createFeedElement(item);
+              createExploreElement(item);
+            });
+            emptyHome.style.display = 'none';
+            emptyExplore.style.display = 'none';
+            mediaCountTxt.textContent = `${mediaList.length} Media dimuat`;
+            switchBottomNav('home');
+            e.target.value = '';
+          }, 200);
+        }
+      }, 50);
+    });
+
+    function formatTime(seconds) {
+      if (isNaN(seconds) || seconds < 0) return '00:00';
+      const m = Math.floor(seconds / 60);
+      const s = Math.floor(seconds % 60);
+      return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    function createFeedElement(data) {
+      const el = document.createElement('div');
+      el.className = 'feed-item';
+      el.dataset.id = data.id;
+
+      let inner = '';
+      if (data.type.startsWith('video/')) {
+        inner = `<video class="media-content" src="${data.url}" loop playsinline preload="metadata"></video>`;
+      } else if (data.type.startsWith('audio/')) {
+        inner = `
+          <div class="audio-box">
+            <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+            <span>Audio Lokal</span>
+          </div>
+          <audio src="${data.url}" loop preload="metadata" style="display:none"></audio>
+        `;
+      } else {
+        inner = `<img class="media-content" src="${data.url}" alt="">`;
+      }
+
+      el.innerHTML = `
+        <div class="media-wrapper">
+          ${inner}
+          <!-- Ikon Pause: Segitiga murni tanpa latar -->
+          <div class="pause-triangle-badge">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          </div>
+          <!-- Notif Rotate Phone Ramping, Border Tipis, Putih, Menghilang setelah 4s -->
+          <div class="rotate-pill" title="Putar Layar Penuh">
+            <svg viewBox="0 0 24 24">
+              <path d="M16.48 2.52c3.27 1.55 5.61 4.72 5.97 8.48h1.5C23.44 4.84 18.29 0 12 0l-.66.03 3.81 3.81 1.33-1.32zm-10.96 4l-1.33 1.32C2.25 9.4 0 12.57 0 16.33h1.5c.36-3.76 2.7-6.93 5.97-8.48L6.15 6.52h1.37zm1.96 14.96c-3.27-1.55-5.61-4.72-5.97-8.48H0c.51 6.16 5.66 11 11.95 11l.66-.03-3.81-3.81-1.32 1.32zm10.96-4l1.33-1.32c1.94-1.56 4.19-4.73 4.19-8.49h-1.5c-.36 3.76-2.7 6.93-5.97 8.48l1.32 1.33h-1.37zM7 19h10V5H7v14zm2-12h6v10H9V7z"/>
+            </svg>
+            <span>Rotate Phone</span>
+          </div>
+        </div>
+        <div class="overlay-info">
+          <div class="meta-user">@lokal.${data.type.split('/')[0] || 'file'}</div>
+          <div class="meta-desc">${data.name}</div>
+          <div class="meta-tags">
+            <span>Res: <b class="res">...</b></span>
+            <span>•</span>
+            <span>${data.date}</span>
+          </div>
+        </div>
+        <div class="sidebar">
+          <button class="side-btn btn-like">
+            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            <span>Suka</span>
+          </button>
+        </div>
+      `;
+
+      const wrapper = el.querySelector('.media-wrapper');
+      const vid = el.querySelector('video');
+      const img = el.querySelector('img');
+      const aud = el.querySelector('audio');
+      const res = el.querySelector('.res');
+      const likeBtn = el.querySelector('.btn-like');
+      const pill = el.querySelector('.rotate-pill');
+      const pauseBadge = el.querySelector('.pause-triangle-badge');
+
+      // Notif Rotate Phone menghilang setelah 4 detik & muncul kembali saat aktifitas (klik/sentuh)
+      let pillDismissTimer = null;
+      function showRotatePillFor4s() {
+        if (el.dataset.isLandscape !== 'true') return;
+        pill.classList.add('visible');
+        clearTimeout(pillDismissTimer);
+        pillDismissTimer = setTimeout(() => {
+          pill.classList.remove('visible');
+        }, 4000);
+      }
+
+      function hideRotatePillImmediately() {
+        clearTimeout(pillDismissTimer);
+        pill.classList.remove('visible');
+      }
+
+      el.triggerRotatePill = showRotatePillFor4s;
+      el.hideRotatePill = hideRotatePillImmediately;
+
+      if (vid) {
+        vid.addEventListener('loadedmetadata', () => {
+          res.textContent = `${vid.videoWidth}x${vid.videoHeight}`;
+          if (vid.videoWidth > vid.videoHeight) {
+            el.dataset.isLandscape = 'true';
+            showRotatePillFor4s();
+          }
+        });
+        pill.addEventListener('click', (e) => {
+          e.stopPropagation();
+          enterLandscape(vid);
+        });
+      } else if (img) {
+        img.addEventListener('load', () => {
+          res.textContent = `${img.naturalWidth}x${img.naturalHeight}`;
+        });
+      } else if (aud) {
+        aud.addEventListener('loadedmetadata', () => {
+          res.textContent = 'Audio (' + Math.round(aud.duration) + 's)';
+        });
+      }
+
+      function popHeartCenter() {
+        data.liked = true;
+        likeBtn.classList.add('liked');
+        const h = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        h.setAttribute('viewBox', '0 0 24 24');
+        h.setAttribute('class', 'heart-center');
+        h.innerHTML = '<path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>';
+        wrapper.appendChild(h);
+        setTimeout(() => h.remove(), 420);
+      }
+
+      function triggerPauseTriangle() {
+        pauseBadge.classList.remove('animate-triangle');
+        void pauseBadge.offsetWidth; // Force re-render
+        pauseBadge.classList.add('animate-triangle');
+        setTimeout(() => {
+          pauseBadge.classList.remove('animate-triangle');
+        }, 340);
+      }
+
+      likeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        data.liked = !data.liked;
+        likeBtn.classList.toggle('liked', data.liked);
+        if (currentTab === 'liked') filterHomeFeed();
+      });
+
+      // Deteksi sentuhan / scroll di HP tanpa mengunci scroll native
+      let touchStartY = 0;
+      let touchStartX = 0;
+      let isTouchMoved = false;
+      let clickTimer = null;
+      let clickCount = 0;
+
+      wrapper.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+          touchStartY = e.touches[0].clientY;
+          touchStartX = e.touches[0].clientX;
+          isTouchMoved = false;
+        }
+        // Munculkan notif rotate saat aktifitas sentuh
+        showRotatePillFor4s();
+      }, { passive: true });
+
+      wrapper.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 1) {
+          const dy = Math.abs(e.touches[0].clientY - touchStartY);
+          const dx = Math.abs(e.touches[0].clientX - touchStartX);
+          if (dy > 8 || dx > 8) {
+            isTouchMoved = true;
+          }
+        }
+      }, { passive: true });
+
+      wrapper.addEventListener('touchend', (e) => {
+        if (isTouchMoved) {
+          // Sedang scroll, jangan proses tap pause/like
+          return;
+        }
+        handleMediaTap(e);
+      });
+
+      // Fallback untuk desktop click
+      wrapper.addEventListener('click', (e) => {
+        if ('ontouchstart' in window) return; // Prioritaskan touchend jika di layar sentuh
+        showRotatePillFor4s();
+        handleMediaTap(e);
+      });
+
+      function handleMediaTap(e) {
+        if (e.target === pill || pill.contains(e.target)) return;
+        clickCount++;
+
+        if (clickCount === 1) {
+          clickTimer = setTimeout(() => {
+            if (vid) {
+              if (vid.paused) {
+                vid.play();
+                el.dataset.userPaused = '';
+              } else {
+                vid.pause();
+                el.dataset.userPaused = 'true';
+                triggerPauseTriangle(); // Segitiga tanpa latar muncul lalu fade out
+              }
+            }
+            clickCount = 0;
+          }, 240);
+        } else if (clickCount >= 2) {
+          clearTimeout(clickTimer);
+          clickCount = 0;
+          popHeartCenter();
+        }
+      }
+
+      homeView.appendChild(el);
+      obs.observe(el);
+    }
+
+    function createExploreElement(data) {
+      const card = document.createElement('div');
+      card.className = 'grid-item';
+
+      let thumb = '';
+      if (data.type.startsWith('video/')) {
+        thumb = `<video class="grid-thumb" src="${data.url}#t=0.5" preload="metadata" muted></video>`;
+      } else if (data.type.startsWith('image/')) {
+        thumb = `<img class="grid-thumb" src="${data.url}" alt="">`;
+      } else {
+        thumb = `
+          <div class="grid-thumb" style="display:flex;align-items:center;justify-content:center;background:#222">
+            <svg viewBox="0 0 24 24" style="width:32px;height:32px;fill:#888"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+          </div>
+        `;
+      }
+
+      // Overlay Eksplor menunjukkan Nama dan Tanggal
+      card.innerHTML = `
+        ${thumb}
+        <div class="grid-overlay">
+          <div class="grid-item-title">${data.name}</div>
+          <div class="grid-item-date">${data.date}</div>
+        </div>
+      `;
+
+      card.addEventListener('click', () => {
+        switchBottomNav('home');
+        const target = [...homeView.children].find(c => +c.dataset.id === data.id);
+        if (target) target.scrollIntoView({ behavior: 'smooth' });
+      });
+      exploreGrid.appendChild(card);
+    }
+
+    // Rotasi Landscape & Timestamp Bar
+    function enterLandscape(sourceVid) {
+      activeLandscapeVideo = sourceVid;
+      lsVideo.src = sourceVid.src;
+      lsVideo.currentTime = sourceVid.currentTime;
+      sourceVid.pause();
+
+      fsLandscape.style.display = 'flex';
+      lsVideo.play().catch(() => {});
+
+      if (fsLandscape.requestFullscreen) {
+        fsLandscape.requestFullscreen().catch(() => {});
+      }
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').catch(() => {});
+      }
+    }
+
+    lsVideo.addEventListener('timeupdate', () => {
+      if (!lsVideo.duration) return;
+      const progress = (lsVideo.currentTime / lsVideo.duration) * 100;
+      lsFill.style.width = progress + '%';
+      lsCurrentTime.textContent = formatTime(lsVideo.currentTime);
+      lsDuration.textContent = formatTime(lsVideo.duration);
+    });
+
+    lsVideo.addEventListener('loadedmetadata', () => {
+      lsDuration.textContent = formatTime(lsVideo.duration);
+    });
+
+    lsTrack.addEventListener('click', (e) => {
+      const rect = lsTrack.getBoundingClientRect();
+      const pos = (e.clientX - rect.left) / rect.width;
+      if (lsVideo.duration) {
+        lsVideo.currentTime = pos * lsVideo.duration;
+      }
+    });
+
+    lsVideo.addEventListener('click', () => {
+      if (lsVideo.paused) {
+        lsVideo.play();
+      } else {
+        lsVideo.pause();
+      }
+    });
+
+    // Keluar dari landscape dan lanjutkan tepat di titik waktu tersebut
+    document.getElementById('landscape-close').addEventListener('click', () => {
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+      if (screen.orientation && screen.orientation.unlock) {
+        screen.orientation.unlock();
+      }
+      fsLandscape.style.display = 'none';
+      if (activeLandscapeVideo) {
+        activeLandscapeVideo.currentTime = lsVideo.currentTime;
+        activeLandscapeVideo.play().catch(() => {});
+      }
+      lsVideo.pause();
+      lsVideo.src = '';
+    });
+  </script>
+</body>
+</html>
