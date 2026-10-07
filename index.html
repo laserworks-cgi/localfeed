@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
   <title>Lokal Media Feed</title>
   <style>
     * {
@@ -13,20 +13,29 @@
       -webkit-user-select: none;
       user-select: none;
     }
-    body {
+    :root {
+      --app-height: 100vh;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    html, body {
       background: #000;
       color: #fff;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      height: 100vh;
+      height: 100%;
+      height: var(--app-height, 100vh);
       width: 100vw;
       overflow: hidden;
+      position: fixed; /* Mencegah overscroll browser di mobile */
+      inset: 0;
       display: flex;
       justify-content: center;
     }
     .app-shell {
       width: 100%;
       max-width: 480px;
-      height: 100vh;
+      height: 100%;
+      height: var(--app-height, 100vh);
       position: relative;
       background: #000;
       overflow: hidden;
@@ -49,23 +58,24 @@
       opacity: 1;
     }
     .app-shell.theme-blurred .bottom-nav {
-      background: rgba(0, 0, 0, .45) !important;
+      background: rgba(0, 0, 0, .6) !important;
       backdrop-filter: blur(20px);
     }
     
-    /* Floating Header Menu: Tanpa latar & tab aktif warna merah */
+    /* Floating Header Menu: Tanpa latar & tab aktif warna merah, aman dari notch HP */
     .top-header-glass {
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
-      z-index: 100;
+      z-index: 120;
       background: transparent !important;
       backdrop-filter: none !important;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 52px;
+      padding-top: var(--safe-top, 0px);
+      height: calc(52px + var(--safe-top, 0px));
       pointer-events: none;
     }
     .nav-top {
@@ -134,11 +144,13 @@
       scroll-snap-type: y mandatory;
       touch-action: pan-y;
       height: 100%;
+      width: 100%;
     }
     .feed-item {
       width: 100%;
       height: 100%;
-      min-height: 100vh;
+      height: var(--app-height, 100vh);
+      min-height: var(--app-height, 100vh);
       scroll-snap-align: start;
       scroll-snap-stop: always;
       position: relative;
@@ -224,7 +236,7 @@
 
     .overlay-info {
       position: absolute;
-      bottom: 76px;
+      bottom: calc(76px + var(--safe-bottom, 0px));
       left: 16px;
       right: 70px;
       z-index: 20;
@@ -251,7 +263,7 @@
     .sidebar {
       position: absolute;
       right: 12px;
-      bottom: 90px;
+      bottom: calc(86px + var(--safe-bottom, 0px));
       z-index: 25;
       display: flex;
       flex-direction: column;
@@ -280,14 +292,14 @@
       fill: #fe2c55;
     }
 
-    /* Notif Rotate Phone: Ukuran ramping, border 0.5px tipis, putih, auto-dismiss 4 detik */
+    /* Notif Rotate Phone */
     .rotate-pill {
       position: absolute;
-      bottom: 220px;
+      bottom: calc(210px + var(--safe-bottom, 0px));
       left: 50%;
       transform: translateX(-50%);
       z-index: 40;
-      background: rgba(20, 20, 20, 0.82);
+      background: rgba(20, 20, 20, 0.85);
       border: 0.5px solid rgba(255, 255, 255, 0.35);
       backdrop-filter: blur(10px);
       border-radius: 20px;
@@ -341,19 +353,22 @@
       100% { transform: translate(-50%,-65%) scale(1.05); opacity: 0; }
     }
 
+    /* Bottom Navigation: Menempel di bawah viewport mobile dengan penanganan Safe Area */
     .bottom-nav {
       position: absolute;
       bottom: 0;
       left: 0;
       right: 0;
-      height: 60px;
-      background: rgba(0,0,0,.85);
-      backdrop-filter: blur(10px);
-      border-top: 1px solid rgba(255,255,255,.1);
+      height: calc(56px + var(--safe-bottom, 0px));
+      padding-bottom: var(--safe-bottom, 0px);
+      background: rgba(10, 10, 10, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-top: 1px solid rgba(255,255,255,.12);
       display: flex;
       justify-content: space-around;
       align-items: center;
-      z-index: 100;
+      z-index: 150; /* Pastikan selalu berada di atas semua konten feed */
     }
     .bottom-btn {
       background: none;
@@ -362,10 +377,12 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
+      justify-content: center;
+      gap: 3px;
       font-size: 10px;
       cursor: pointer;
       flex: 1;
+      height: 100%;
     }
     .bottom-btn.active {
       color: #fff;
@@ -393,7 +410,7 @@
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 3px;
-      padding: 60px 3px 70px 3px;
+      padding: calc(60px + var(--safe-top, 0px)) 3px calc(70px + var(--safe-bottom, 0px)) 3px;
     }
     .grid-item {
       aspect-ratio: 9/16;
@@ -438,7 +455,7 @@
       position: fixed;
       inset: 0;
       background: #000;
-      z-index: 999;
+      z-index: 9999;
       display: none;
       flex-direction: column;
       align-items: center;
@@ -451,7 +468,7 @@
     }
     #landscape-close {
       position: absolute;
-      top: 18px;
+      top: calc(18px + var(--safe-top, 0px));
       left: 18px;
       background: rgba(0,0,0,.65);
       border: 1px solid rgba(255,255,255,.3);
@@ -470,14 +487,14 @@
     
     .landscape-timeline-bar {
       position: absolute;
-      bottom: 24px;
-      left: 24px;
-      right: 24px;
+      bottom: calc(20px + var(--safe-bottom, 0px));
+      left: 20px;
+      right: 20px;
       z-index: 1002;
       display: flex;
       align-items: center;
       gap: 12px;
-      background: rgba(0, 0, 0, 0.65);
+      background: rgba(0, 0, 0, 0.7);
       backdrop-filter: blur(10px);
       padding: 8px 16px;
       border-radius: 30px;
@@ -507,7 +524,7 @@
     }
 
     .profile-card {
-      padding: 70px 20px 80px 20px;
+      padding: calc(70px + var(--safe-top, 0px)) 20px calc(80px + var(--safe-bottom, 0px)) 20px;
       display: flex;
       flex-direction: column;
       gap: 20px;
@@ -654,7 +671,7 @@
       </div>
     </div>
 
-    <!-- Bottom Navigation -->
+    <!-- Bottom Navigation: Selalu tampak di mobile di atas konten -->
     <div class="bottom-nav" id="bottomNav">
       <button class="bottom-btn active" data-nav="home">
         <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
@@ -695,12 +712,23 @@
   </div>
 
   <script>
+    // Handle Dynamic Viewport Height di Mobile Browser (Chrome/Safari Address Bar)
+    function setAppHeight() {
+      const h = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
+      document.documentElement.style.setProperty('--app-height', h + 'px');
+    }
+    window.addEventListener('resize', setAppHeight);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', setAppHeight);
+    }
+    setAppHeight();
+
     let mediaList = [];
     let currentTab = 'mymedia';
     let activeLandscapeVideo = null;
     let uploadedSignatures = new Set();
     let isHomeActive = true;
-    let currentActiveFeedItem = null; // Menyimpan item aktif myMedia secara konsisten
+    let currentActiveFeedItem = null;
 
     const homeView = document.getElementById('view-home');
     const exploreGrid = document.getElementById('explore-grid');
@@ -747,7 +775,7 @@
           }
         }
       });
-    }, { root: homeView, threshold: 0.65 });
+    }, { root: homeView, threshold: 0.6 });
 
     function updateAmbientBackground(itemEl) {
       if (!itemEl) return;
@@ -806,22 +834,22 @@
     }
 
     document.querySelectorAll('.bottom-btn').forEach(b => {
-      b.addEventListener('click', () => switchBottomNav(b.dataset.nav));
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        switchBottomNav(b.dataset.nav);
+      });
     });
 
     // Floating header tabs (myMedia / Liked)
-    // PERBAIKAN: Tidak scroll ke atas/item awal, hanya filter visibility sehingga posisi video saat ini tetap meneruskan
     document.querySelectorAll('.nav-tab').forEach(t => {
-      t.addEventListener('click', () => {
+      t.addEventListener('click', (e) => {
+        e.stopPropagation();
         document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
         t.classList.add('active');
         currentTab = t.dataset.tab;
         filterHomeFeed();
-
-        // Pastikan halaman aktif adalah feed
         switchBottomNav('home');
 
-        // Lanjutkan video pada item yang sedang terlihat tanpa reset timeline
         const currentItem = getCurrentlyVisibleFeedItem();
         if (currentItem) {
           const m = currentItem.querySelector('video, audio');
@@ -934,11 +962,9 @@
       el.innerHTML = `
         <div class="media-wrapper">
           ${inner}
-          <!-- Ikon Pause: Segitiga murni tanpa latar -->
           <div class="pause-triangle-badge">
             <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
           </div>
-          <!-- Notif Rotate Phone Ramping, Border Tipis, Putih, Menghilang setelah 4s -->
           <div class="rotate-pill" title="Putar Layar Penuh">
             <svg viewBox="0 0 24 24">
               <path d="M16.48 2.52c3.27 1.55 5.61 4.72 5.97 8.48h1.5C23.44 4.84 18.29 0 12 0l-.66.03 3.81 3.81 1.33-1.32zm-10.96 4l-1.33 1.32C2.25 9.4 0 12.57 0 16.33h1.5c.36-3.76 2.7-6.93 5.97-8.48L6.15 6.52h1.37zm1.96 14.96c-3.27-1.55-5.61-4.72-5.97-8.48H0c.51 6.16 5.66 11 11.95 11l.66-.03-3.81-3.81-1.32 1.32zm10.96-4l1.33-1.32c1.94-1.56 4.19-4.73 4.19-8.49h-1.5c-.36 3.76-2.7 6.93-5.97 8.48l1.32 1.33h-1.37zM7 19h10V5H7v14zm2-12h6v10H9V7z"/>
@@ -1025,7 +1051,7 @@
 
       function triggerPauseTriangle() {
         pauseBadge.classList.remove('animate-triangle');
-        void pauseBadge.offsetWidth; // Force re-render
+        void pauseBadge.offsetWidth;
         pauseBadge.classList.add('animate-triangle');
         setTimeout(() => {
           pauseBadge.classList.remove('animate-triangle');
@@ -1039,11 +1065,6 @@
         if (currentTab === 'liked') filterHomeFeed();
       });
 
-      // ========================================================
-      // PERBAIKAN LOGIKA TAP:
-      // - 1 Klik / Tap -> PAUSE / PLAY (memunculkan segitiga fade singkat)
-      // - 2 Klik / Tap Cepat -> LIKE (animasi hati pop-up)
-      // ========================================================
       let touchStartY = 0;
       let touchStartX = 0;
       let isTouchMoved = false;
@@ -1078,9 +1099,8 @@
         handleUnifiedTap(e);
       });
 
-      // Desktop click
       wrapper.addEventListener('click', (e) => {
-        if ('ontouchstart' in window) return; // Pada touch screen, touchend yang menangani
+        if ('ontouchstart' in window) return;
         showRotatePillFor4s();
         handleUnifiedTap(e);
       });
@@ -1091,7 +1111,6 @@
 
         if (tapCount === 1) {
           clickTimer = setTimeout(() => {
-            // SINGLE CLICK -> HANYA PAUSE / PLAY
             if (vid) {
               if (vid.paused) {
                 vid.play().catch(() => {});
@@ -1099,13 +1118,12 @@
               } else {
                 vid.pause();
                 el.dataset.userPaused = 'true';
-                triggerPauseTriangle(); // Munculkan segitiga tanpa latar lalu fade out
+                triggerPauseTriangle();
               }
             }
             tapCount = 0;
           }, 260);
         } else if (tapCount >= 2) {
-          // DOUBLE CLICK -> HANYA LIKE (TIDAK MEM-PAUSE VIDEO)
           clearTimeout(clickTimer);
           tapCount = 0;
           popHeartCenter();
@@ -1133,7 +1151,6 @@
         `;
       }
 
-      // Overlay Eksplor menunjukkan Nama dan Tanggal
       card.innerHTML = `
         ${thumb}
         <div class="grid-overlay">
@@ -1196,7 +1213,6 @@
       }
     });
 
-    // Keluar dari landscape dan lanjutkan tepat di titik waktu tersebut
     document.getElementById('landscape-close').addEventListener('click', () => {
       if (document.fullscreenElement) {
         document.exitFullscreen().catch(() => {});
