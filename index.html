@@ -2,8 +2,13 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
   <title>Lokal Media Feed</title>
+  <meta name="theme-color" content="#000000">
+  <meta name="color-scheme" content="dark">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+
   <style>
     * {
       box-sizing: border-box;
@@ -13,29 +18,20 @@
       -webkit-user-select: none;
       user-select: none;
     }
-    :root {
-      --app-height: 100vh;
-      --safe-top: env(safe-area-inset-top, 0px);
-      --safe-bottom: env(safe-area-inset-bottom, 0px);
-    }
-    html, body {
+    body {
       background: #000;
       color: #fff;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      height: 100%;
-      height: var(--app-height, 100vh);
+      height: 100vh;
       width: 100vw;
       overflow: hidden;
-      position: fixed; /* Mencegah overscroll browser di mobile */
-      inset: 0;
       display: flex;
       justify-content: center;
     }
     .app-shell {
       width: 100%;
       max-width: 480px;
-      height: 100%;
-      height: var(--app-height, 100vh);
+      height: 100vh;
       position: relative;
       background: #000;
       overflow: hidden;
@@ -58,24 +54,23 @@
       opacity: 1;
     }
     .app-shell.theme-blurred .bottom-nav {
-      background: rgba(0, 0, 0, .6) !important;
+      background: rgba(0, 0, 0, .45) !important;
       backdrop-filter: blur(20px);
     }
     
-    /* Floating Header Menu: Tanpa latar & tab aktif warna merah, aman dari notch HP */
+    /* Floating Header Menu: Tanpa latar & tab aktif warna merah */
     .top-header-glass {
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
-      z-index: 120;
+      z-index: 100;
       background: transparent !important;
       backdrop-filter: none !important;
       display: flex;
       justify-content: center;
       align-items: center;
-      padding-top: var(--safe-top, 0px);
-      height: calc(52px + var(--safe-top, 0px));
+      height: 52px;
       pointer-events: none;
     }
     .nav-top {
@@ -144,13 +139,11 @@
       scroll-snap-type: y mandatory;
       touch-action: pan-y;
       height: 100%;
-      width: 100%;
     }
     .feed-item {
       width: 100%;
       height: 100%;
-      height: var(--app-height, 100vh);
-      min-height: var(--app-height, 100vh);
+      min-height: 100vh;
       scroll-snap-align: start;
       scroll-snap-stop: always;
       position: relative;
@@ -236,7 +229,7 @@
 
     .overlay-info {
       position: absolute;
-      bottom: calc(76px + var(--safe-bottom, 0px));
+      bottom: 76px;
       left: 16px;
       right: 70px;
       z-index: 20;
@@ -263,7 +256,7 @@
     .sidebar {
       position: absolute;
       right: 12px;
-      bottom: calc(86px + var(--safe-bottom, 0px));
+      bottom: 90px;
       z-index: 25;
       display: flex;
       flex-direction: column;
@@ -292,14 +285,14 @@
       fill: #fe2c55;
     }
 
-    /* Notif Rotate Phone */
+    /* Notif Rotate Phone: Ukuran ramping, border 0.5px tipis, putih, auto-dismiss 4 detik */
     .rotate-pill {
       position: absolute;
-      bottom: calc(210px + var(--safe-bottom, 0px));
+      bottom: 220px;
       left: 50%;
       transform: translateX(-50%);
       z-index: 40;
-      background: rgba(20, 20, 20, 0.85);
+      background: rgba(20, 20, 20, 0.82);
       border: 0.5px solid rgba(255, 255, 255, 0.35);
       backdrop-filter: blur(10px);
       border-radius: 20px;
@@ -353,22 +346,19 @@
       100% { transform: translate(-50%,-65%) scale(1.05); opacity: 0; }
     }
 
-    /* Bottom Navigation: Menempel di bawah viewport mobile dengan penanganan Safe Area */
     .bottom-nav {
       position: absolute;
       bottom: 0;
       left: 0;
       right: 0;
-      height: calc(56px + var(--safe-bottom, 0px));
-      padding-bottom: var(--safe-bottom, 0px);
-      background: rgba(10, 10, 10, 0.92);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-top: 1px solid rgba(255,255,255,.12);
+      height: 60px;
+      background: rgba(0,0,0,.85);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid rgba(255,255,255,.1);
       display: flex;
       justify-content: space-around;
       align-items: center;
-      z-index: 150; /* Pastikan selalu berada di atas semua konten feed */
+      z-index: 100;
     }
     .bottom-btn {
       background: none;
@@ -377,12 +367,10 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      gap: 3px;
+      gap: 4px;
       font-size: 10px;
       cursor: pointer;
       flex: 1;
-      height: 100%;
     }
     .bottom-btn.active {
       color: #fff;
@@ -410,7 +398,7 @@
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 3px;
-      padding: calc(60px + var(--safe-top, 0px)) 3px calc(70px + var(--safe-bottom, 0px)) 3px;
+      padding: 60px 3px 70px 3px;
     }
     .grid-item {
       aspect-ratio: 9/16;
@@ -455,7 +443,7 @@
       position: fixed;
       inset: 0;
       background: #000;
-      z-index: 9999;
+      z-index: 999;
       display: none;
       flex-direction: column;
       align-items: center;
@@ -468,7 +456,7 @@
     }
     #landscape-close {
       position: absolute;
-      top: calc(18px + var(--safe-top, 0px));
+      top: 18px;
       left: 18px;
       background: rgba(0,0,0,.65);
       border: 1px solid rgba(255,255,255,.3);
@@ -487,14 +475,14 @@
     
     .landscape-timeline-bar {
       position: absolute;
-      bottom: calc(20px + var(--safe-bottom, 0px));
-      left: 20px;
-      right: 20px;
+      bottom: 24px;
+      left: 24px;
+      right: 24px;
       z-index: 1002;
       display: flex;
       align-items: center;
       gap: 12px;
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.65);
       backdrop-filter: blur(10px);
       padding: 8px 16px;
       border-radius: 30px;
@@ -524,7 +512,7 @@
     }
 
     .profile-card {
-      padding: calc(70px + var(--safe-top, 0px)) 20px calc(80px + var(--safe-bottom, 0px)) 20px;
+      padding: 70px 20px 80px 20px;
       display: flex;
       flex-direction: column;
       gap: 20px;
@@ -617,6 +605,205 @@
       background: #fe2c55;
       transition: width .1s linear;
     }
+  
+    /* ===== Responsive / Flexbox hardening ===== */
+    html, body {
+      width: 100%;
+      min-height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      min-height: 100dvh;
+      height: 100dvh;
+    }
+
+    .app-shell {
+      width: min(100%, 560px);
+      height: 100dvh;
+      min-height: 0;
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .views-container {
+      min-height: 0;
+      flex: 1 1 auto;
+      overflow: hidden;
+    }
+
+    .view-page {
+      min-height: 0;
+      height: 100%;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+      scrollbar-width: none;
+    }
+
+    /* Only the feed owns vertical scrolling. Other pages use their own page scroll,
+       never a nested scroll container inside a page. */
+    #view-home {
+      overflow-x: hidden;
+      overflow-y: auto;
+      min-height: 0;
+      height: 100%;
+      scroll-snap-type: y mandatory;
+      overscroll-behavior-y: contain;
+      padding-bottom: 60px;
+    }
+
+    .feed-item {
+      height: 100%;
+      min-height: 100%;
+      max-height: 100%;
+      flex: 0 0 100%;
+    }
+
+    .profile-card {
+      width: 100%;
+      max-width: 560px;
+      margin: 0 auto;
+      padding: calc(58px + env(safe-area-inset-top)) 16px calc(84px + env(safe-area-inset-bottom));
+      min-height: 100%;
+    }
+
+    .profile-header {
+      min-width: 0;
+    }
+
+    .profile-header > div:last-child {
+      min-width: 0;
+    }
+
+    .profile-header > div:last-child > div {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .profile-btn-upload,
+    .profile-fullscreen-btn {
+      width: 100%;
+      min-height: 46px;
+    }
+
+    .profile-section {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .theme-options {
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
+    .theme-btn {
+      min-width: 0;
+      flex: 1 1 140px;
+    }
+
+    .bottom-nav {
+      height: calc(60px + env(safe-area-inset-bottom));
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .top-header-glass {
+      height: calc(52px + env(safe-area-inset-top));
+      padding-top: env(safe-area-inset-top);
+    }
+
+    .overlay-info {
+      bottom: calc(76px + env(safe-area-inset-bottom));
+    }
+
+    .sidebar {
+      bottom: calc(90px + env(safe-area-inset-bottom));
+    }
+
+    .grid-view {
+      padding-bottom: calc(70px + env(safe-area-inset-bottom));
+    }
+
+    .audio-box {
+      width: min(78vw, 320px);
+      text-align: center;
+    }
+
+    .audio-cover {
+      width: min(68vw, 220px);
+      aspect-ratio: 1;
+      object-fit: cover;
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.45);
+      background: #181818;
+    }
+
+    .audio-title {
+      width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .audio-artist {
+      width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 12px;
+      color: rgba(255,255,255,.72);
+    }
+
+    .profile-fullscreen-status {
+      display: block;
+      margin-top: 8px;
+      font-size: 11px;
+      line-height: 1.4;
+      color: rgba(255,255,255,.55);
+    }
+
+    @media (min-width: 700px) {
+      body {
+        background: #101010;
+        overflow: hidden;
+      }
+
+      .app-shell {
+        box-shadow: 0 0 60px rgba(0,0,0,.4);
+      }
+
+      .nav-top {
+        gap: 40px;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .nav-top {
+        gap: 20px;
+      }
+
+      .nav-tab {
+        font-size: 14px;
+      }
+
+      .profile-card {
+        padding-left: 12px;
+        padding-right: 12px;
+      }
+
+      .profile-header {
+        gap: 12px;
+      }
+
+      .profile-avatar {
+        width: 60px;
+        height: 60px;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -661,17 +848,40 @@
             </svg> Tambah Media Lokal
           </button>
           <div class="profile-section">
-            <div class="section-title">Latar Menu</div>
+            <div class="section-title">Tampilan</div>
             <div class="theme-options">
               <button class="theme-btn active" data-theme="default">Default</button>
               <button class="theme-btn" data-theme="blurred">Blurred Konten</button>
             </div>
           </div>
+
+          <div class="profile-section">
+            <div class="section-title">Layar</div>
+            <button class="profile-btn-upload profile-fullscreen-btn" id="btnBrowserFullscreen" type="button">
+              <svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:currentColor">
+                <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+              </svg>
+              <span id="browserFullscreenLabel">Fullscreen Browser</span>
+            </button>
+            <span class="profile-fullscreen-status" id="browserFullscreenStatus">
+              Mode fullscreen browser untuk area aplikasi.
+            </span>
+          </div>
+
+          <div class="profile-section">
+            <div class="section-title">Aplikasi</div>
+            <button class="profile-btn-upload" id="btnInstallPWA" type="button" style="display:none">
+              <svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:currentColor">
+                <path d="M19 9h-4V3H9v6H5l7 7 7-7zm-7 10a1 1 0 0 1-1-1v-2h2v2a1 1 0 0 1-1 1zM5 21h14v-2H5v2z"/>
+              </svg>
+              Pasang sebagai PWA
+            </button>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Bottom Navigation: Selalu tampak di mobile di atas konten -->
+    <!-- Bottom Navigation -->
     <div class="bottom-nav" id="bottomNav">
       <button class="bottom-btn active" data-nav="home">
         <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
@@ -698,6 +908,7 @@
     </div>
   </div>
 
+  <!-- Dedicated Landscape Fullscreen View: media fullscreen tetap terpisah dari Fullscreen Browser di Profile -->
   <!-- Dedicated Landscape Fullscreen View -->
   <div id="fullscreen-landscape">
     <button id="landscape-close" title="Kembali">✕</button>
@@ -712,23 +923,12 @@
   </div>
 
   <script>
-    // Handle Dynamic Viewport Height di Mobile Browser (Chrome/Safari Address Bar)
-    function setAppHeight() {
-      const h = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
-      document.documentElement.style.setProperty('--app-height', h + 'px');
-    }
-    window.addEventListener('resize', setAppHeight);
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', setAppHeight);
-    }
-    setAppHeight();
-
     let mediaList = [];
     let currentTab = 'mymedia';
     let activeLandscapeVideo = null;
     let uploadedSignatures = new Set();
     let isHomeActive = true;
-    let currentActiveFeedItem = null;
+    let currentActiveFeedItem = null; // Menyimpan item aktif myMedia secara konsisten
 
     const homeView = document.getElementById('view-home');
     const exploreGrid = document.getElementById('explore-grid');
@@ -775,7 +975,7 @@
           }
         }
       });
-    }, { root: homeView, threshold: 0.6 });
+    }, { root: homeView, threshold: 0.65 });
 
     function updateAmbientBackground(itemEl) {
       if (!itemEl) return;
@@ -834,22 +1034,22 @@
     }
 
     document.querySelectorAll('.bottom-btn').forEach(b => {
-      b.addEventListener('click', (e) => {
-        e.stopPropagation();
-        switchBottomNav(b.dataset.nav);
-      });
+      b.addEventListener('click', () => switchBottomNav(b.dataset.nav));
     });
 
     // Floating header tabs (myMedia / Liked)
+    // PERBAIKAN: Tidak scroll ke atas/item awal, hanya filter visibility sehingga posisi video saat ini tetap meneruskan
     document.querySelectorAll('.nav-tab').forEach(t => {
-      t.addEventListener('click', (e) => {
-        e.stopPropagation();
+      t.addEventListener('click', () => {
         document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
         t.classList.add('active');
         currentTab = t.dataset.tab;
         filterHomeFeed();
+
+        // Pastikan halaman aktif adalah feed
         switchBottomNav('home');
 
+        // Lanjutkan video pada item yang sedang terlihat tanpa reset timeline
         const currentItem = getCurrentlyVisibleFeedItem();
         if (currentItem) {
           const m = currentItem.querySelector('video, audio');
@@ -861,13 +1061,20 @@
       });
     });
 
+    function applyTheme(theme) {
+      document.querySelectorAll('.theme-btn').forEach(x => x.classList.toggle('active', x.dataset.theme === theme));
+      appShell.classList.toggle('theme-blurred', theme === 'blurred');
+      try { localStorage.setItem('lokalMediaTheme', theme); } catch (_) {}
+    }
+
     document.querySelectorAll('.theme-btn').forEach(b => {
-      b.addEventListener('click', () => {
-        document.querySelectorAll('.theme-btn').forEach(x => x.classList.remove('active'));
-        b.classList.add('active');
-        appShell.classList.toggle('theme-blurred', b.dataset.theme === 'blurred');
-      });
+      b.addEventListener('click', () => applyTheme(b.dataset.theme));
     });
+
+    try {
+      const savedTheme = localStorage.getItem('lokalMediaTheme');
+      if (savedTheme === 'blurred' || savedTheme === 'default') applyTheme(savedTheme);
+    } catch (_) {}
 
     function filterHomeFeed() {
       let visibleCount = 0;
@@ -879,6 +1086,123 @@
         if (show) visibleCount++;
       });
       emptyHome.style.display = visibleCount === 0 ? 'flex' : 'none';
+
+      if (currentActiveFeedItem && currentActiveFeedItem.style.display === 'none') {
+        const nextVisible = [...homeView.children].find(el =>
+          el.classList.contains('feed-item') && el.style.display !== 'none'
+        );
+        if (nextVisible) {
+          requestAnimationFrame(() => {
+            homeView.scrollTo({ top: nextVisible.offsetTop, behavior: 'auto' });
+            currentActiveFeedItem = nextVisible;
+          });
+        }
+      }
+    }
+
+
+    // ============================================================
+    // Persistensi media lokal via IndexedDB
+    // ============================================================
+    const DB_NAME = 'lokal-media-feed-db';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'media';
+
+    function openMediaDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function saveMediaRecord(item) {
+      try {
+        const db = await openMediaDB();
+        await new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          tx.objectStore(STORE_NAME).put({
+            id: item.id,
+            file: item.file,
+            liked: !!item.liked,
+            name: item.name,
+            date: item.date,
+            size: item.size,
+            type: item.type
+          });
+          tx.oncomplete = resolve;
+          tx.onerror = () => reject(tx.error);
+        });
+        db.close();
+      } catch (_) {}
+    }
+
+    async function updatePersistedLike(item) {
+      try {
+        const db = await openMediaDB();
+        await new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          const store = tx.objectStore(STORE_NAME);
+          const req = store.get(item.id);
+          req.onsuccess = () => {
+            const record = req.result;
+            if (record) {
+              record.liked = !!item.liked;
+              store.put(record);
+            }
+          };
+          tx.oncomplete = resolve;
+          tx.onerror = () => reject(tx.error);
+        });
+        db.close();
+      } catch (_) {}
+    }
+
+    async function loadPersistedMedia() {
+      try {
+        const db = await openMediaDB();
+        const records = await new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readonly');
+          const req = tx.objectStore(STORE_NAME).getAll();
+          req.onsuccess = () => resolve(req.result || []);
+          req.onerror = () => reject(req.error);
+        });
+        db.close();
+
+        for (const record of records) {
+          if (!record || !record.file) continue;
+          const url = URL.createObjectURL(record.file);
+          const item = {
+            id: record.id,
+            file: record.file,
+            url,
+            liked: !!record.liked,
+            type: record.type || record.file.type || '',
+            name: record.name || record.file.name || 'Media Lokal',
+            date: record.date || new Date(record.file.lastModified || Date.now()).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'}),
+            size: record.size || ((record.file.size / (1024 * 1024)).toFixed(2) + ' MB'),
+            metadata: null,
+            coverUrl: '',
+            artist: '',
+            album: '',
+            title: ''
+          };
+          mediaList.push(item);
+          uploadedSignatures.add(`${record.file.name}_${record.file.size}_${record.file.lastModified}`);
+          createFeedElement(item);
+          createExploreElement(item);
+        }
+
+        mediaCountTxt.textContent = `${mediaList.length} Media dimuat`;
+        emptyHome.style.display = mediaList.length ? 'none' : 'flex';
+        emptyExplore.style.display = mediaList.length ? 'none' : 'flex';
+      } catch (_) {}
     }
 
     // Input Media Lokal
@@ -916,11 +1240,17 @@
                 type: f.type,
                 name: f.name,
                 date: dateStr,
-                size: (f.size / (1024 * 1024)).toFixed(2) + ' MB'
+                size: (f.size / (1024 * 1024)).toFixed(2) + ' MB',
+                metadata: null,
+                coverUrl: '',
+                artist: '',
+                album: '',
+                title: ''
               };
               mediaList.push(item);
               createFeedElement(item);
               createExploreElement(item);
+              saveMediaRecord(item);
             });
             emptyHome.style.display = 'none';
             emptyExplore.style.display = 'none';
@@ -950,8 +1280,12 @@
       } else if (data.type.startsWith('audio/')) {
         inner = `
           <div class="audio-box">
-            <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
-            <span>Audio Lokal</span>
+            <div class="audio-cover-wrap">
+              <img class="audio-cover" alt="" style="display:none">
+              <svg class="audio-default-icon" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+            </div>
+            <div class="audio-title">Audio Lokal</div>
+            <div class="audio-artist"></div>
           </div>
           <audio src="${data.url}" loop preload="metadata" style="display:none"></audio>
         `;
@@ -962,9 +1296,11 @@
       el.innerHTML = `
         <div class="media-wrapper">
           ${inner}
+          <!-- Ikon Pause: Segitiga murni tanpa latar -->
           <div class="pause-triangle-badge">
             <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
           </div>
+          <!-- Notif Rotate Phone Ramping, Border Tipis, Putih, Menghilang setelah 4s -->
           <div class="rotate-pill" title="Putar Layar Penuh">
             <svg viewBox="0 0 24 24">
               <path d="M16.48 2.52c3.27 1.55 5.61 4.72 5.97 8.48h1.5C23.44 4.84 18.29 0 12 0l-.66.03 3.81 3.81 1.33-1.32zm-10.96 4l-1.33 1.32C2.25 9.4 0 12.57 0 16.33h1.5c.36-3.76 2.7-6.93 5.97-8.48L6.15 6.52h1.37zm1.96 14.96c-3.27-1.55-5.61-4.72-5.97-8.48H0c.51 6.16 5.66 11 11.95 11l.66-.03-3.81-3.81-1.32 1.32zm10.96-4l1.33-1.32c1.94-1.56 4.19-4.73 4.19-8.49h-1.5c-.36 3.76-2.7 6.93-5.97 8.48l1.32 1.33h-1.37zM7 19h10V5H7v14zm2-12h6v10H9V7z"/>
@@ -993,10 +1329,15 @@
       const vid = el.querySelector('video');
       const img = el.querySelector('img');
       const aud = el.querySelector('audio');
+      const mediaEl = vid || aud;
       const res = el.querySelector('.res');
       const likeBtn = el.querySelector('.btn-like');
       const pill = el.querySelector('.rotate-pill');
       const pauseBadge = el.querySelector('.pause-triangle-badge');
+      const audioCover = el.querySelector('.audio-cover');
+      const audioDefaultIcon = el.querySelector('.audio-default-icon');
+      const audioTitle = el.querySelector('.audio-title');
+      const audioArtist = el.querySelector('.audio-artist');
 
       let pillDismissTimer = null;
       function showRotatePillFor4s() {
@@ -1034,13 +1375,41 @@
         });
       } else if (aud) {
         aud.addEventListener('loadedmetadata', () => {
-          res.textContent = 'Audio (' + Math.round(aud.duration) + 's)';
+          res.textContent = 'Audio (' + formatTime(aud.duration) + ')';
         });
+
+        // Baca metadata cover/judul/artis dari tag ID3 MP3 secara lokal.
+        readAudioMetadata(data.file).then(meta => {
+          if (!meta) return;
+          data.metadata = meta;
+          data.artist = meta.artist || '';
+          data.album = meta.album || '';
+          data.title = meta.title || '';
+          if (meta.title) audioTitle.textContent = meta.title;
+          if (meta.artist) audioArtist.textContent = meta.artist;
+          if (meta.coverUrl && audioCover) {
+            audioCover.src = meta.coverUrl;
+            audioCover.style.display = 'block';
+            if (audioDefaultIcon) audioDefaultIcon.style.display = 'none';
+            bgBlur.style.backgroundImage = `url('${meta.coverUrl}')`;
+          }
+          const parts = [];
+          if (meta.artist) parts.push(meta.artist);
+          if (meta.album) parts.push(meta.album);
+          if (parts.length) {
+            res.textContent = parts.join(' • ');
+          }
+          const desc = el.querySelector('.meta-desc');
+          if (desc && (meta.title || meta.artist)) {
+            desc.textContent = [meta.title, meta.artist].filter(Boolean).join(' — ') || data.name;
+          }
+        }).catch(() => {});
       }
 
       function popHeartCenter() {
         data.liked = true;
         likeBtn.classList.add('liked');
+        updatePersistedLike(data);
         const h = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         h.setAttribute('viewBox', '0 0 24 24');
         h.setAttribute('class', 'heart-center');
@@ -1051,7 +1420,7 @@
 
       function triggerPauseTriangle() {
         pauseBadge.classList.remove('animate-triangle');
-        void pauseBadge.offsetWidth;
+        void pauseBadge.offsetWidth; // Force re-render
         pauseBadge.classList.add('animate-triangle');
         setTimeout(() => {
           pauseBadge.classList.remove('animate-triangle');
@@ -1062,9 +1431,15 @@
         e.stopPropagation();
         data.liked = !data.liked;
         likeBtn.classList.toggle('liked', data.liked);
+        updatePersistedLike(data);
         if (currentTab === 'liked') filterHomeFeed();
       });
 
+      // ========================================================
+      // PERBAIKAN LOGIKA TAP:
+      // - 1 Klik / Tap -> PAUSE / PLAY (memunculkan segitiga fade singkat)
+      // - 2 Klik / Tap Cepat -> LIKE (animasi hati pop-up)
+      // ========================================================
       let touchStartY = 0;
       let touchStartX = 0;
       let isTouchMoved = false;
@@ -1099,8 +1474,9 @@
         handleUnifiedTap(e);
       });
 
+      // Desktop click
       wrapper.addEventListener('click', (e) => {
-        if ('ontouchstart' in window) return;
+        if ('ontouchstart' in window) return; // Pada touch screen, touchend yang menangani
         showRotatePillFor4s();
         handleUnifiedTap(e);
       });
@@ -1111,19 +1487,21 @@
 
         if (tapCount === 1) {
           clickTimer = setTimeout(() => {
-            if (vid) {
-              if (vid.paused) {
-                vid.play().catch(() => {});
+            // SINGLE CLICK -> HANYA PAUSE / PLAY
+            if (mediaEl) {
+              if (mediaEl.paused) {
+                mediaEl.play().catch(() => {});
                 el.dataset.userPaused = '';
               } else {
-                vid.pause();
+                mediaEl.pause();
                 el.dataset.userPaused = 'true';
-                triggerPauseTriangle();
+                triggerPauseTriangle(); // Munculkan segitiga tanpa latar lalu fade out
               }
             }
             tapCount = 0;
           }, 260);
         } else if (tapCount >= 2) {
+          // DOUBLE CLICK -> HANYA LIKE (TIDAK MEM-PAUSE VIDEO)
           clearTimeout(clickTimer);
           tapCount = 0;
           popHeartCenter();
@@ -1151,6 +1529,7 @@
         `;
       }
 
+      // Overlay Eksplor menunjukkan Nama dan Tanggal
       card.innerHTML = `
         ${thumb}
         <div class="grid-overlay">
@@ -1213,6 +1592,7 @@
       }
     });
 
+    // Keluar dari landscape dan lanjutkan tepat di titik waktu tersebut
     document.getElementById('landscape-close').addEventListener('click', () => {
       if (document.fullscreenElement) {
         document.exitFullscreen().catch(() => {});
@@ -1228,6 +1608,193 @@
       lsVideo.pause();
       lsVideo.src = '';
     });
+
+    // ============================================================
+    // Metadata audio lokal: ID3v2 TIT2/TPE1/TALB/TDRC/APIC
+    // Fokus pada MP3 agar tetap native/offline tanpa library eksternal.
+    // ============================================================
+    function decodeText(bytes, encoding) {
+      try {
+        if (encoding === 1) return new TextDecoder('utf-16').decode(bytes).replace(/\u0000+$/g, '').trim();
+        if (encoding === 2) return new TextDecoder('utf-16be').decode(bytes).replace(/\u0000+$/g, '').trim();
+        if (encoding === 3) return new TextDecoder('utf-8').decode(bytes).replace(/\u0000+$/g, '').trim();
+        return new TextDecoder('iso-8859-1').decode(bytes).replace(/\u0000+$/g, '').trim();
+      } catch (_) {
+        return '';
+      }
+    }
+
+    function readSyncSafe(b0, b1, b2, b3) {
+      return ((b0 & 0x7f) << 21) | ((b1 & 0x7f) << 14) | ((b2 & 0x7f) << 7) | (b3 & 0x7f);
+    }
+
+    function parseTextFrame(payload) {
+      if (!payload?.length) return '';
+      return decodeText(payload.subarray(1), payload[0]);
+    }
+
+    function parseAPIC(payload) {
+      if (!payload || payload.length < 5) return null;
+      const encoding = payload[0];
+      let p = 1;
+
+      const mimeEnd = payload.indexOf(0, p);
+      if (mimeEnd < 0) return null;
+      const mimeRaw = new TextDecoder('iso-8859-1').decode(payload.subarray(p, mimeEnd)).trim();
+      const mime = mimeRaw || 'image/jpeg';
+      p = mimeEnd + 1;
+
+      if (p >= payload.length) return null;
+      p += 1; // picture type
+
+      // Description is null-terminated. UTF-16 descriptions use two-byte terminator.
+      if (encoding === 1 || encoding === 2) {
+        for (; p + 1 < payload.length; p += 2) {
+          if (payload[p] === 0 && payload[p + 1] === 0) {
+            p += 2;
+            break;
+          }
+        }
+      } else {
+        const descEnd = payload.indexOf(0, p);
+        p = descEnd >= 0 ? descEnd + 1 : p;
+      }
+
+      if (p >= payload.length) return null;
+      return { mime, bytes: payload.subarray(p) };
+    }
+
+    async function readAudioMetadata(file) {
+      if (!file || !/^audio\//i.test(file.type)) return null;
+
+      // ID3 tags live at the start of an MP3. Read only the tag region.
+      const head = new Uint8Array(await file.slice(0, 10).arrayBuffer());
+      if (head.length < 10 || head[0] !== 0x49 || head[1] !== 0x44 || head[2] !== 0x33) return null;
+
+      const version = head[3];
+      const tagSize = readSyncSafe(head[6], head[7], head[8], head[9]);
+      const tagBytes = new Uint8Array(await file.slice(10, 10 + tagSize).arrayBuffer());
+
+      const meta = { title: '', artist: '', album: '', year: '', genre: '', coverUrl: '' };
+      let p = 0;
+
+      while (p + 10 <= tagBytes.length) {
+        const id = String.fromCharCode(tagBytes[p], tagBytes[p + 1], tagBytes[p + 2], tagBytes[p + 3]);
+        if (!id.trim() || id[0] === '\0') break;
+
+        let frameSize = 0;
+        if (version >= 4) {
+          frameSize = readSyncSafe(tagBytes[p + 4], tagBytes[p + 5], tagBytes[p + 6], tagBytes[p + 7]);
+        } else {
+          frameSize =
+            (tagBytes[p + 4] << 24) |
+            (tagBytes[p + 5] << 16) |
+            (tagBytes[p + 6] << 8) |
+            tagBytes[p + 7];
+        }
+        if (frameSize <= 0 || p + 10 + frameSize > tagBytes.length) break;
+
+        const payload = tagBytes.subarray(p + 10, p + 10 + frameSize);
+
+        if (['TIT2'].includes(id)) meta.title = parseTextFrame(payload);
+        else if (['TPE1'].includes(id)) meta.artist = parseTextFrame(payload);
+        else if (['TALB'].includes(id)) meta.album = parseTextFrame(payload);
+        else if (['TDRC', 'TYER'].includes(id)) meta.year = parseTextFrame(payload);
+        else if (id === 'TCON') meta.genre = parseTextFrame(payload);
+        else if (id === 'APIC' && !meta.coverUrl) {
+          const cover = parseAPIC(payload);
+          if (cover?.bytes?.length) {
+            const blob = new Blob([cover.bytes], { type: cover.mime });
+            meta.coverUrl = URL.createObjectURL(blob);
+          }
+        }
+
+        p += 10 + frameSize;
+      }
+
+      return meta;
+    }
+
+    // ============================================================
+    // Fullscreen Browser di Profile
+    // ============================================================
+    const btnBrowserFullscreen = document.getElementById('btnBrowserFullscreen');
+    const browserFullscreenLabel = document.getElementById('browserFullscreenLabel');
+    const browserFullscreenStatus = document.getElementById('browserFullscreenStatus');
+    const btnInstallPWA = document.getElementById('btnInstallPWA');
+
+    function isFullscreenSupported() {
+      return !!(document.fullscreenEnabled && document.documentElement.requestFullscreen);
+    }
+
+    function syncFullscreenUi() {
+      const active = !!document.fullscreenElement;
+      browserFullscreenLabel.textContent = active ? 'Keluar Fullscreen Browser' : 'Fullscreen Browser';
+      browserFullscreenStatus.textContent = active
+        ? 'Fullscreen aktif. Tekan tombol yang sama untuk kembali.'
+        : (isFullscreenSupported()
+          ? 'Mode fullscreen browser untuk area aplikasi.'
+          : 'Browser ini tidak menyediakan Fullscreen API. PWA tetap dapat berjalan standalone.');
+    }
+
+    if (btnBrowserFullscreen) {
+      btnBrowserFullscreen.addEventListener('click', async () => {
+        try {
+          if (!isFullscreenSupported()) {
+            browserFullscreenStatus.textContent = 'Fullscreen API tidak didukung pada browser ini.';
+            return;
+          }
+          if (document.fullscreenElement) {
+            await document.exitFullscreen();
+          } else {
+            await document.documentElement.requestFullscreen();
+          }
+        } catch (_) {
+          browserFullscreenStatus.textContent = 'Fullscreen diblokir browser. Coba tekan lagi dari interaksi langsung.';
+        }
+        syncFullscreenUi();
+      });
+    }
+    document.addEventListener('fullscreenchange', syncFullscreenUi);
+    syncFullscreenUi();
+
+    // ============================================================
+    // PWA install prompt
+    // ============================================================
+    let deferredInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', (event) => {
+      event.preventDefault();
+      deferredInstallPrompt = event;
+      if (btnInstallPWA) btnInstallPWA.style.display = 'flex';
+    });
+
+    if (btnInstallPWA) {
+      btnInstallPWA.addEventListener('click', async () => {
+        if (!deferredInstallPrompt) return;
+        deferredInstallPrompt.prompt();
+        try {
+          await deferredInstallPrompt.userChoice;
+        } catch (_) {}
+        deferredInstallPrompt = null;
+        btnInstallPWA.style.display = 'none';
+      });
+    }
+
+    window.addEventListener('appinstalled', () => {
+      deferredInstallPrompt = null;
+      if (btnInstallPWA) btnInstallPWA.style.display = 'none';
+    });
+
+    // Pulihkan media lokal setelah reload / membuka ulang PWA.
+    loadPersistedMedia();
+
+    // Register service worker untuk PWA.
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+
   </script>
 </body>
 </html>
